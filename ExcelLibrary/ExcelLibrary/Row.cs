@@ -53,7 +53,8 @@ namespace ExcelLibrary
         public void AddCell(Cell cell)
         {
             Cell match = (from c in this.cells
-                          where c.Row.Index == cell.Row.Index && c.Column.Index == cell.Column.Index
+                          where c.Row.Index == cell.Row.Index &&
+                                c.Column.Index == cell.Column.Index
                           select c).SingleOrDefault();
 
             if (match == null)
@@ -61,6 +62,17 @@ namespace ExcelLibrary
                 cell.Row = this;
                 this.cells.Add(cell);
             }
+        }
+
+        public Cell Cell(int index)
+        {
+            Cell cell = this.cells.Where(c => c.Column.Index == index).SingleOrDefault();
+            return cell;
+        }
+
+        public Cell Cell(string name)
+        {
+            throw new NotImplementedException();
         }
     }
 }

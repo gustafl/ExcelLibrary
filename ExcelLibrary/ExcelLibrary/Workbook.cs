@@ -59,7 +59,7 @@ namespace ExcelLibrary
                 foreach (Sheet sheet in this.sheets)
                 {
                     ZipArchiveEntry entry = archive.Entries.FirstOrDefault(e => e.FullName == sheet.Path);
-                    LoadSheet(entry, sheet);
+                    sheet.Load(entry);
                 }
             }
         }
@@ -128,68 +128,6 @@ namespace ExcelLibrary
             }
         }
 
-        private void LoadSheet(ZipArchiveEntry entry, Sheet sheet)
-        {
-            XDocument document = XDocument.Load(entry.Open());
-            XElement root = document.Root;
-            XNamespace ns = NS_MAIN;
-
-            // Loop throgh rows
-            XElement sheetData = root.Element(ns + "sheetData");
-            foreach (XElement eRow in sheetData.Elements(ns + "row"))
-            {
-                // Set row properties
-                XAttribute attr1 = eRow.Attribute("r");
-                XAttribute attr2 = eRow.Attribute("hidden");
-                int index = Convert.ToInt16(attr1.Value);
-                bool hidden = (attr2 != null && attr2.Value == "1") ? true : false;
-                Row row = new Row(index, hidden);
-
-                // Loop through cells on row
-                foreach (XElement eCell in eRow.Elements(ns + "c"))
-                {
-                    // Get cell position
-                    string position = eCell.Attribute("r").Value;
-                    Match match = Regex.Match(position, @"([A-Z]+)(\d+)");
-                    string letters = match.Groups[1].Value;
-                    string numbers = match.Groups[2].Value;
-                    int columnIndex = GetColumnIndex(letters);
-                    int rowIndex = Convert.ToInt16(numbers);
-
-                    // Get cell value
-                    XElement xValue = eCell.Element(ns + "v");
-                    int number = Convert.ToInt16(xValue.Value);
-                    string sharedString = string.Empty;
-                    this.sharedStrings.TryGetValue(number, out sharedString);
-                    
-                    // Make column object
-                    Column column = new Column(columnIndex);
-
-                    // Add cell to row
-                    Cell cell = new Cell(sharedString);
-                    cell.Row = row;
-                    cell.Column = column;
-                    row.AddCell(cell);
-                }
-
-                // Add row to sheet
-                sheet.AddRow(row);
-            }
-        }
-
-        private int GetColumnIndex(string name)
-        {
-            int number = 0;
-            int pow = 1;
-            for (int i = name.Length - 1; i >= 0; i--)
-            {
-                number += (name[i] - 'A' + 1) * pow;
-                pow *= 26;
-            }
-
-            return number;
-        }
-
         public IEnumerable<Sheet> Sheets
         {
             get
@@ -205,14 +143,26 @@ namespace ExcelLibrary
                     sheetsToReturn.AddRange(hiddenSheets);
                 }
 
-                return sheetsToReturn;    
+                return sheetsToReturn;
             }
+        }
+
+        public Sheet GetSheetByName(string name)
+        {
+            Sheet sheet = this.sheets.Where(s => s.Name == name).SingleOrDefault();
+            return sheet;
         }
 
         public WorkbookOptions Options
         {
             get { return this.options; }
             set { this.options = value; }
+        }
+
+        public Dictionary<int, string> SharedStrings
+        {
+            get { return this.sharedStrings; }
+            set { this.sharedStrings = value; }
         }
     }
 }

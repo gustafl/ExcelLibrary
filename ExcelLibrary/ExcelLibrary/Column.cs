@@ -52,15 +52,22 @@ namespace ExcelLibrary
 
         public void AddCell(Cell cell)
         {
-            IEnumerable<Cell> matches = from c in this.cells
-                                        where c.Row.Index == cell.Row.Index && c.Column.Index == cell.Column.Index
-                                        select c;
+            Cell match = (from c in this.cells
+                          where c.Row.Index == cell.Row.Index &&
+                                c.Column.Index == cell.Column.Index
+                          select c).SingleOrDefault();
 
-            if (matches.Count() == 0)
+            if (match == null)
             {
                 cell.Column = this;
                 this.cells.Add(cell);
             }
+        }
+
+        public Cell GetCellAtRow(int index)
+        {
+            Cell cell = this.cells.Where(c => c.Row.Index == index).SingleOrDefault();
+            return cell;
         }
     }
 }

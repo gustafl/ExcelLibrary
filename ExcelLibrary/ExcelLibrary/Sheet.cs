@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace ExcelLibrary
 {
-    public enum SheetVisibility { Visible, Hidden };
-
     public class Sheet
     {
+        private const string NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+
         private string name;
         private string id;
         private string path;
@@ -64,6 +67,25 @@ namespace ExcelLibrary
             set { this.workbook = value; }
         }
 
+        public Row Row(int index)
+        {
+            Row row = this.rows.Where(r => r.Index == index).SingleOrDefault();
+            return row;
+        }
+
+        public Column Column(int index)
+        {
+            Column column = this.columns.Where(c => c.Index == index).SingleOrDefault();
+            return column;
+        }
+
+        public Cell Cell(int row, int column)
+        {
+            throw new NotImplementedException();
+
+            // TODO: Find out how to get all cells from all rows using LINQ
+        }
+
         public IEnumerable<Row> Rows
         {
             get
@@ -89,6 +111,68 @@ namespace ExcelLibrary
             {
                 throw new NotImplementedException();    // TODO
             }
+        }
+
+        public void Load(ZipArchiveEntry entry)
+        {
+            XDocument document = XDocument.Load(entry.Open());
+            XElement root = document.Root;
+            XNamespace ns = NS_MAIN;
+
+            // Loop throgh rows
+            XElement sheetData = root.Element(ns + "sheetData");
+            foreach (XElement eRow in sheetData.Elements(ns + "row"))
+            {
+                // Set row properties
+                XAttribute attr1 = eRow.Attribute("r");
+                XAttribute attr2 = eRow.Attribute("hidden");
+                int index = Convert.ToInt16(attr1.Value);
+                bool hidden = (attr2 != null && attr2.Value == "1") ? true : false;
+                Row row = new Row(index, hidden);
+
+                // Loop through cells on row
+                foreach (XElement eCell in eRow.Elements(ns + "c"))
+                {
+                    // Get cell position
+                    string position = eCell.Attribute("r").Value;
+                    Match match = Regex.Match(position, @"([A-Z]+)(\d+)");
+                    string letters = match.Groups[1].Value;
+                    string numbers = match.Groups[2].Value;
+                    int columnIndex = GetColumnIndex(letters);
+                    int rowIndex = Convert.ToInt16(numbers);
+
+                    // Get cell value
+                    XElement xValue = eCell.Element(ns + "v");
+                    int number = Convert.ToInt16(xValue.Value);
+                    string sharedString = string.Empty;
+                    this.workbook.SharedStrings.TryGetValue(number, out sharedString);
+
+                    // Make column object
+                    Column column = new Column(columnIndex);
+
+                    // Add cell to row
+                    Cell cell = new Cell(sharedString);
+                    cell.Row = row;
+                    cell.Column = column;
+                    row.AddCell(cell);
+                }
+
+                // Add row to sheet
+                this.AddRow(row);
+            }
+        }
+
+        private int GetColumnIndex(string name)
+        {
+            int number = 0;
+            int pow = 1;
+            for (int i = name.Length - 1; i >= 0; i--)
+            {
+                number += (name[i] - 'A' + 1) * pow;
+                pow *= 26;
+            }
+
+            return number;
         }
 
         public void AddRow(Row row)
