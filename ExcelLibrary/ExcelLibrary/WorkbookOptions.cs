@@ -9,6 +9,5 @@ namespace ExcelLibrary
     public class WorkbookOptions
     {
         public bool IncludeHidden = false;
-        public bool IncludeVeryHidden = false;
     }
 }

@@ -147,7 +147,7 @@ namespace ExcelLibrary
             }
         }
 
-        public Sheet GetSheetByName(string name)
+        public Sheet Sheet(string name)
         {
             Sheet sheet = this.sheets.Where(s => s.Name == name).SingleOrDefault();
             return sheet;
