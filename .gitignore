@@ -3,3 +3,8 @@
 *.user
 *.cache
 *.suo
+*.manifest
+*.config
+*.exe
+*.xlsx
+*.txt

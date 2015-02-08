@@ -122,8 +122,12 @@ namespace ExcelLibrary
 
             foreach (XElement si in root.Elements(ns + "si"))
             {
-                XElement t = si.Element(ns + "t");
-                this.sharedStrings.Add(count, t.Value);
+                IEnumerable<XElement> ts = si.Descendants(ns + "t");
+                string sum = string.Empty;
+                foreach (XElement t in ts)
+                    sum += t.Value;
+
+                this.sharedStrings.Add(count, sum);
                 count++;
             }
         }

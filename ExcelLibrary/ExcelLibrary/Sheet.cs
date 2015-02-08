@@ -143,6 +143,12 @@ namespace ExcelLibrary
 
                     // Get cell value
                     XElement xValue = eCell.Element(ns + "v");
+                    if (xValue == null)
+                        continue;
+
+                    /* If the cell has not value (no <v> element), there's nothing more to do here.
+                     * We are only collecting cells with content. */
+
                     int number = Convert.ToInt16(xValue.Value);
                     string sharedString = string.Empty;
                     this.workbook.SharedStrings.TryGetValue(number, out sharedString);
