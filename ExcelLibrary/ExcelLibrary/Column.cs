@@ -47,7 +47,7 @@ namespace ExcelLibrary
 
         public IEnumerable<Cell> Cells
         {
-            get { return this.cells; }
+            get { return this.cells.OrderBy(c => c.Row.Index); }
         }
 
         public void AddCell(Cell cell)
@@ -64,7 +64,7 @@ namespace ExcelLibrary
             }
         }
 
-        public Cell GetCellAtRow(int index)
+        public Cell Cell(int index)
         {
             Cell cell = this.cells.Where(c => c.Row.Index == index).SingleOrDefault();
             return cell;

@@ -115,6 +115,10 @@ namespace ExcelLibrary
 
         private void LoadSharedStrings(ZipArchiveEntry entry)
         {
+            // The xl/sharedStrings.xml file will be missing in a completely blank file
+            if (entry == null)
+                return;
+
             XDocument document = XDocument.Load(entry.Open());
             XElement root = document.Root;
             XNamespace ns = NS_MAIN;
@@ -147,7 +151,7 @@ namespace ExcelLibrary
                     sheetsToReturn.AddRange(hiddenSheets);
                 }
 
-                return sheetsToReturn;
+                return sheetsToReturn.OrderBy(s => s.Id);
             }
         }
 
@@ -166,7 +170,6 @@ namespace ExcelLibrary
         public Dictionary<int, string> SharedStrings
         {
             get { return this.sharedStrings; }
-            set { this.sharedStrings = value; }
         }
     }
 }

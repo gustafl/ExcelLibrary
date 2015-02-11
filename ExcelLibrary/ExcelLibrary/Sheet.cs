@@ -101,7 +101,7 @@ namespace ExcelLibrary
                     rowsToReturn.AddRange(hiddenRows);
                 }
 
-                return rowsToReturn;
+                return rowsToReturn.OrderBy(r => r.Index);
             }
         }
 
@@ -109,7 +109,18 @@ namespace ExcelLibrary
         {
             get
             {
-                throw new NotImplementedException();    // TODO
+                List<Column> columnsToReturn = new List<Column>();
+
+                IEnumerable<Column> visibleColumns = this.columns.Where(c => c.Hidden == false);
+                columnsToReturn.AddRange(visibleColumns);
+
+                if (this.workbook.Options.IncludeHidden)
+                {
+                    IEnumerable<Column> hiddenColumns = this.columns.Where(c => c.Hidden == true);
+                    columnsToReturn.AddRange(hiddenColumns);
+                }
+
+                return columnsToReturn.OrderBy(c => c.Index);
             }
         }
 
@@ -118,6 +129,9 @@ namespace ExcelLibrary
             XDocument document = XDocument.Load(entry.Open());
             XElement root = document.Root;
             XNamespace ns = NS_MAIN;
+
+            // Find hidden columns
+            List<int> hiddenColumns = GetHiddenColumns(root, ns);
 
             // Loop throgh rows
             XElement sheetData = root.Element(ns + "sheetData");
@@ -153,19 +167,50 @@ namespace ExcelLibrary
                     string sharedString = string.Empty;
                     this.workbook.SharedStrings.TryGetValue(number, out sharedString);
 
-                    // Make column object
+                    // Make column
                     Column column = new Column(columnIndex);
+                    column.Hidden = (hiddenColumns.Contains(columnIndex)) ? true : false;
 
-                    // Add cell to row
+                    // Make Cell
                     Cell cell = new Cell(sharedString);
-                    cell.Row = row;
                     cell.Column = column;
+                    cell.Row = row;
+
+                    // Add cell to row and column
                     row.AddCell(cell);
+                    column.AddCell(cell);
                 }
 
                 // Add row to sheet
                 this.AddRow(row);
             }
+        }
+
+        private List<int> GetHiddenColumns(XElement root, XNamespace ns)
+        {
+            List<int> hiddenColumns = new List<int>();
+            XElement eCols = root.Element(ns + "cols");
+
+            if (eCols != null)
+            {
+                foreach (XElement eCol in eCols.Elements(ns + "col"))
+                {
+                    XAttribute aMin = eCol.Attribute("min");
+                    XAttribute aMax = eCol.Attribute("max");
+                    XAttribute aHidden = eCol.Attribute("hidden");
+
+                    int min = (aMin != null) ? Convert.ToInt16(aMin.Value) : 0;
+                    int max = (aMax != null) ? Convert.ToInt16(aMax.Value) : 0;
+                    bool hidden = (aHidden != null && aHidden.Value == "1") ? true : false;
+
+                    for (int i = min; i <= max; i++)
+                    {
+                        hiddenColumns.Add(i);
+                    }
+                }
+            }
+
+            return hiddenColumns;
         }
 
         private int GetColumnIndex(string name)

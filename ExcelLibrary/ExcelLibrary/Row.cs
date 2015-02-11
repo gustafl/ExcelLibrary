@@ -47,7 +47,7 @@ namespace ExcelLibrary
 
         public IEnumerable<Cell> Cells
         {
-            get { return this.cells; }
+            get { return this.cells.OrderBy(c => c.Column.Index); }
         }
 
         public void AddCell(Cell cell)
