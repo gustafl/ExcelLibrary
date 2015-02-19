@@ -69,10 +69,5 @@ namespace ExcelLibrary
             Cell cell = this.cells.Where(c => c.Column.Index == index).SingleOrDefault();
             return cell;
         }
-
-        public Cell Cell(string name)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

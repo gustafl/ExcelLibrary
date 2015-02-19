@@ -54,13 +54,6 @@ namespace ExcelLibrary
                 // Read "xl/sharedStrings.xml" to get shared strings
                 ZipArchiveEntry sharedStringsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/sharedStrings.xml");
                 LoadSharedStrings(sharedStringsEntry);
-
-                // Open each sheet found
-                foreach (Sheet sheet in this.sheets)
-                {
-                    ZipArchiveEntry entry = archive.Entries.FirstOrDefault(e => e.FullName == sheet.Path);
-                    sheet.Load(entry);
-                }
             }
         }
 
@@ -165,6 +158,11 @@ namespace ExcelLibrary
         {
             get { return this.options; }
             set { this.options = value; }
+        }
+
+        public string File
+        {
+            get { return this.file; }
         }
 
         public Dictionary<int, string> SharedStrings

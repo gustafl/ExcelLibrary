@@ -79,11 +79,43 @@ namespace ExcelLibrary
             return column;
         }
 
-        public Cell Cell(int row, int column)
+        public Cell Cell(int rowIndex, int columnIndex)
         {
-            throw new NotImplementedException();
+            IEnumerable<Cell> cells = this.rows.SelectMany(r => r.Cells);
 
-            // TODO: Find out how to get all cells from all rows using LINQ
+            Cell cell = (from c in cells
+                         where c.Row.Index == rowIndex &&
+                               c.Column.Index == columnIndex
+                         select c).SingleOrDefault();
+
+            return cell;
+        }
+
+        public Cell Cell(string name)
+        {
+            Match match = Regex.Match(name, @"([A-Z]+)(\d+)");
+            string letters = match.Groups[1].Value;
+            string numbers = match.Groups[2].Value;
+            int columnIndex = GetColumnIndex(letters);
+            int rowIndex = Convert.ToInt16(numbers);
+
+            IEnumerable<Cell> cells = this.rows.SelectMany(r => r.Cells);
+
+            Cell cell = (from c in cells
+                         where c.Row.Index == rowIndex &&
+                               c.Column.Index == columnIndex
+                         select c).SingleOrDefault();
+
+            return cell;
+        }
+
+        public IEnumerable<Cell> Cells
+        {
+            get
+            {
+                IEnumerable<Cell> cells = this.rows.SelectMany(r => r.Cells);
+                return cells;
+            }
         }
 
         public IEnumerable<Row> Rows
@@ -124,7 +156,16 @@ namespace ExcelLibrary
             }
         }
 
-        public void Load(ZipArchiveEntry entry)
+        public void Open()
+        {
+            using (ZipArchive archive = ZipFile.OpenRead(this.workbook.File))
+            {
+                ZipArchiveEntry entry = archive.Entries.FirstOrDefault(e => e.FullName == this.Path);
+                this.Load(entry);
+            }
+        }
+
+        private void Load(ZipArchiveEntry entry)
         {
             XDocument document = XDocument.Load(entry.Open());
             XElement root = document.Root;
@@ -160,7 +201,7 @@ namespace ExcelLibrary
                     if (xValue == null)
                         continue;
 
-                    /* If the cell has not value (no <v> element), there's nothing more to do here.
+                    /* If the cell has no value (no <v> element), there's nothing more to do here.
                      * We are only collecting cells with content. */
 
                     int number = Convert.ToInt16(xValue.Value);
@@ -171,7 +212,7 @@ namespace ExcelLibrary
                     Column column = new Column(columnIndex);
                     column.Hidden = (hiddenColumns.Contains(columnIndex)) ? true : false;
 
-                    // Make Cell
+                    // Make cell
                     Cell cell = new Cell(sharedString);
                     cell.Column = column;
                     cell.Row = row;
