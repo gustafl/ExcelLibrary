@@ -1,25 +1,34 @@
 # ExcelLibrary
 
-The aim of this project is to simplify reading from and writing to Excel workbooks (.xlsx). Here's an example to get you started:
+The aim of this project is to simplify reading from and writing to Excel workbooks (.xlsx). It consists of the following six classes:
+
+* `Workbook`
+* `WorkbookOptions`
+* `Sheet`
+* `Row`
+* `Column`
+* `Cell`
+
+Here's an example to get you started:
 
     Workbook workbook = new Workbook();
     workbook.Open("Book1.xlsx");
-    foreach (Sheet sheet in workbook.Sheets)
-    {
-        Console.WriteLine(sheet.Name);
-    }
+    Sheet sheet = workbook.Sheet("Sheet1");
+    Row row = sheet.Row(2);
+    Cell cell = row.Cell(3);
+    string text = cell.Value;
 
 See the wiki for more examples.
 
 ## Limitations
 
-The following items have been considered outside the scope of this project.
+The following things have been considered outside the scope of the project:
 
 * All file formats except `.xslx`.
 * Formulas
 * Formatting properties
 
-Also, the library will not create new workbooks, but this can be achieved by including a template workbook in your project and copy it whenever you need to create a workbook.
+Also, the library will not create new workbooks _per se_, but this can be achieved by including a template workbook in your project and copy it whenever you need to create a workbook.
 
 ## Dependencies
 
