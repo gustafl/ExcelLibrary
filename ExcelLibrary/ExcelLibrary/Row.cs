@@ -47,14 +47,23 @@ namespace ExcelLibrary
 
         public IEnumerable<Cell> Cells
         {
-            get { return this.cells.OrderBy(c => c.Column.Index); }
+            get
+            {
+                if (this.Sheet.Workbook.Options.IncludeHidden)
+                {
+                    return this.cells.OrderBy(c => c.Column.Index);
+                }
+                else
+                {
+                    return this.cells.Where(c => c.Column.Hidden == false).OrderBy(c => c.Column.Index);
+                }
+            }
         }
 
         public void AddCell(Cell cell)
         {
             Cell match = (from c in this.cells
-                          where c.Row.Index == cell.Row.Index &&
-                                c.Column.Index == cell.Column.Index
+                          where c.Column.Index == cell.Column.Index
                           select c).SingleOrDefault();
 
             if (match == null)

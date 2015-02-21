@@ -113,8 +113,14 @@ namespace ExcelLibrary
         {
             get
             {
-                IEnumerable<Cell> cells = this.rows.SelectMany(r => r.Cells);
-                return cells;
+                if (this.workbook.Options.IncludeHidden)
+                {
+                    return this.rows.SelectMany(r => r.Cells);
+                }
+                else
+                {
+                    return this.rows.Where(r => r.Hidden == false).SelectMany(r => r.Cells);
+                }
             }
         }
 
@@ -122,18 +128,14 @@ namespace ExcelLibrary
         {
             get
             {
-                List<Row> rowsToReturn = new List<Row>();
-
-                IEnumerable<Row> visibleRows = this.rows.Where(r => r.Hidden == false);
-                rowsToReturn.AddRange(visibleRows);
-
                 if (this.workbook.Options.IncludeHidden)
                 {
-                    IEnumerable<Row> hiddenRows = this.rows.Where(r => r.Hidden == true);
-                    rowsToReturn.AddRange(hiddenRows);
+                    return this.rows.OrderBy(r => r.Index);
                 }
-
-                return rowsToReturn.OrderBy(r => r.Index);
+                else
+                {
+                    return this.rows.Where(r => r.Hidden == false).OrderBy(r => r.Index);
+                }
             }
         }
 
@@ -141,18 +143,14 @@ namespace ExcelLibrary
         {
             get
             {
-                List<Column> columnsToReturn = new List<Column>();
-
-                IEnumerable<Column> visibleColumns = this.columns.Where(c => c.Hidden == false);
-                columnsToReturn.AddRange(visibleColumns);
-
                 if (this.workbook.Options.IncludeHidden)
                 {
-                    IEnumerable<Column> hiddenColumns = this.columns.Where(c => c.Hidden == true);
-                    columnsToReturn.AddRange(hiddenColumns);
+                    return this.columns.OrderBy(c => c.Index);
                 }
-
-                return columnsToReturn.OrderBy(c => c.Index);
+                else
+                {
+                    return this.columns.Where(c => c.Hidden == false).OrderBy(c => c.Index);
+                }
             }
         }
 
@@ -178,6 +176,10 @@ namespace ExcelLibrary
             XElement sheetData = root.Element(ns + "sheetData");
             foreach (XElement eRow in sheetData.Elements(ns + "row"))
             {
+                // Skip empty rows
+                if (eRow.Descendants(ns + "v").Count() == 0)
+                    continue;
+
                 // Set row properties
                 XAttribute attr1 = eRow.Attribute("r");
                 XAttribute attr2 = eRow.Attribute("hidden");
@@ -188,6 +190,11 @@ namespace ExcelLibrary
                 // Loop through cells on row
                 foreach (XElement eCell in eRow.Elements(ns + "c"))
                 {
+                    // Skip empty cells
+                    XElement xValue = eCell.Element(ns + "v");
+                    if (xValue == null)
+                        continue;
+
                     // Get cell position
                     string position = eCell.Attribute("r").Value;
                     Match match = Regex.Match(position, @"([A-Z]+)(\d+)");
@@ -196,22 +203,15 @@ namespace ExcelLibrary
                     int columnIndex = GetColumnIndex(letters);
                     int rowIndex = Convert.ToInt16(numbers);
 
-                    // Get cell value
-                    XElement xValue = eCell.Element(ns + "v");
-                    if (xValue == null)
-                        continue;
-
-                    /* If the cell has no value (no <v> element), there's nothing more to do here.
-                     * We are only collecting cells with content. */
-
+                    // Get cell content
                     int number = Convert.ToInt16(xValue.Value);
                     string sharedString = string.Empty;
                     this.workbook.SharedStrings.TryGetValue(number, out sharedString);
 
                     // Make column
-                    Column column = new Column(columnIndex);
+                    Column column = GetColumn(columnIndex);
                     column.Hidden = (hiddenColumns.Contains(columnIndex)) ? true : false;
-
+                    
                     // Make cell
                     Cell cell = new Cell(sharedString);
                     cell.Column = column;
@@ -220,10 +220,29 @@ namespace ExcelLibrary
                     // Add cell to row and column
                     row.AddCell(cell);
                     column.AddCell(cell);
-                }
 
-                // Add row to sheet
-                this.AddRow(row);
+                    // Add rows and column to sheet
+                    this.AddRow(row);
+                    this.AddColumn(column);
+
+                    /* We add rows and columns multiple times here and let
+                     * the add methods filter out existing ones. */
+                }
+            }
+        }
+
+        private ExcelLibrary.Column GetColumn(int columnIndex)
+        {
+            // Try to find an existing column with the same index
+            Column column = this.columns.Where(c => c.Index == columnIndex).SingleOrDefault();
+            
+            if (column != null)
+            {
+                return column;
+            }
+            else
+            {
+                return new Column(columnIndex);
             }
         }
 
@@ -243,6 +262,9 @@ namespace ExcelLibrary
                     int min = (aMin != null) ? Convert.ToInt16(aMin.Value) : 0;
                     int max = (aMax != null) ? Convert.ToInt16(aMax.Value) : 0;
                     bool hidden = (aHidden != null && aHidden.Value == "1") ? true : false;
+                    
+                    if (hidden == false)
+                        continue;
 
                     for (int i = min; i <= max; i++)
                     {
