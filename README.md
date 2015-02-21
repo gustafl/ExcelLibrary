@@ -1,6 +1,6 @@
 # ExcelLibrary
 
-The aim of this project is to simplify reading from and writing to Excel workbooks (.xlsx). Here's an example to get you started:
+This is a small C# library made to simplify reading from and writing to Excel workbooks (.xlsx). Here's an example to get you started:
 
     Workbook workbook = new Workbook();
     workbook.Open("Book1.xlsx");
@@ -27,4 +27,4 @@ The following things have been considered outside the scope of the project:
 * Formulas
 * Formatting properties
 
-Also, the library will not create new workbooks _per se_, but this can be achieved by including a template workbook in your project and copy it whenever you need to create a workbook.
+Also, the library will not create new workbooks _per se_, but the same can be achieved by including a template workbook in your project and copy it whenever you need to create a workbook.
