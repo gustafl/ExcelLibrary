@@ -51,7 +51,7 @@ namespace ExcelLibrary
 
         public string Path
         {
-            get { return this.path; }
+            get { return this.path.ToLower(); }
             set { this.path = value; }
         }
 
@@ -69,24 +69,32 @@ namespace ExcelLibrary
 
         public Row Row(int index)
         {
-            Row row = this.rows.Where(r => r.Index == index).SingleOrDefault();
-            return row;
+            if (this.workbook.Options.IncludeHidden)
+            {
+                return this.rows.SingleOrDefault(r => r.Index == index);
+            }
+            else
+            {
+                return this.rows.SingleOrDefault(r => r.Index == index && r.Hidden == false);
+            }
         }
 
         public Column Column(int index)
         {
-            Column column = this.columns.Where(c => c.Index == index).SingleOrDefault();
-            return column;
+            if (this.workbook.Options.IncludeHidden)
+            {
+                return this.columns.SingleOrDefault(c => c.Index == index);
+            }
+            else
+            {
+                return this.columns.SingleOrDefault(c => c.Index == index && c.Hidden == false);
+            }
         }
 
         public Cell Cell(int rowIndex, int columnIndex)
         {
             IEnumerable<Cell> cells = this.rows.SelectMany(r => r.Cells);
-
-            Cell cell = (from c in cells
-                         where c.Row.Index == rowIndex &&
-                               c.Column.Index == columnIndex
-                         select c).SingleOrDefault();
+            Cell cell = FindCell(cells, rowIndex, columnIndex);
 
             return cell;
         }
@@ -100,13 +108,33 @@ namespace ExcelLibrary
             int rowIndex = Convert.ToInt16(numbers);
 
             IEnumerable<Cell> cells = this.rows.SelectMany(r => r.Cells);
-
-            Cell cell = (from c in cells
-                         where c.Row.Index == rowIndex &&
-                               c.Column.Index == columnIndex
-                         select c).SingleOrDefault();
+            Cell cell = FindCell(cells, rowIndex, columnIndex);
 
             return cell;
+        }
+
+        private Cell FindCell(IEnumerable<Cell> cells, int rowIndex, int columnIndex)
+        {
+            if (this.workbook.Options.IncludeHidden)
+            {
+                Cell cell = (from c in cells
+                             where c.Row.Index == rowIndex &&
+                                   c.Column.Index == columnIndex
+                             select c).SingleOrDefault();
+
+                return cell;
+            }
+            else
+            {
+                Cell cell = (from c in cells
+                             where c.Row.Index == rowIndex &&
+                                   c.Row.Hidden == false &&
+                                   c.Column.Index == columnIndex &&
+                                   c.Column.Hidden == false
+                             select c).SingleOrDefault();
+
+                return cell;
+            }
         }
 
         public IEnumerable<Cell> Cells
@@ -158,7 +186,7 @@ namespace ExcelLibrary
         {
             using (ZipArchive archive = ZipFile.OpenRead(this.workbook.File))
             {
-                ZipArchiveEntry entry = archive.Entries.FirstOrDefault(e => e.FullName == this.Path);
+                ZipArchiveEntry entry = archive.Entries.FirstOrDefault(e => e.FullName == this.Path.ToLower());
                 this.Load(entry);
             }
         }
@@ -234,7 +262,7 @@ namespace ExcelLibrary
         private ExcelLibrary.Column GetColumn(int columnIndex)
         {
             // Try to find an existing column with the same index
-            Column column = this.columns.Where(c => c.Index == columnIndex).SingleOrDefault();
+            Column column = this.columns.SingleOrDefault(c => c.Index == columnIndex);
             
             if (column != null)
             {

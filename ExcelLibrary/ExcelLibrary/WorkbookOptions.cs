@@ -8,6 +8,12 @@ namespace ExcelLibrary
 {
     public class WorkbookOptions
     {
-        public bool IncludeHidden = false;
+        private bool includeHidden = false;
+
+        public bool IncludeHidden
+        {
+            get { return this.includeHidden; }
+            set { this.includeHidden = value; }
+        }
     }
 }

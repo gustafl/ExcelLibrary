@@ -54,8 +54,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Input\2010_Blank.xlsx" />
-    <None Include="Input\2010_Words.xlsx" />
+    <None Include="Input\test1.xlsx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ExcelLibrary\ExcelLibrary.csproj">

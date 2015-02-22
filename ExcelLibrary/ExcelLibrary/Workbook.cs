@@ -102,7 +102,7 @@ namespace ExcelLibrary
                 // Get sheet file path
                 Match match = Regex.Match(target.Value, @"worksheets/(.+)");
                 string path = @"xl/worksheets/" + match.Groups[1].Value;
-                sheet.Path = path;
+                sheet.Path = path.ToLower();
             }
         }
 
@@ -133,25 +133,20 @@ namespace ExcelLibrary
         {
             get
             {
-                List<Sheet> sheetsToReturn = new List<Sheet>();
-
-                IEnumerable<Sheet> visibleSheets = this.sheets.Where(s => s.Hidden == false);
-                sheetsToReturn.AddRange(visibleSheets);
-
-                if (this.options.IncludeHidden)
+                if (this.Options.IncludeHidden)
                 {
-                    IEnumerable<Sheet> hiddenSheets = this.sheets.Where(s => s.Hidden == true);
-                    sheetsToReturn.AddRange(hiddenSheets);
+                    return this.sheets.OrderBy(s => s.Id);
                 }
-
-                return sheetsToReturn.OrderBy(s => s.Id);
+                else
+                {
+                    return this.sheets.Where(s => s.Hidden == false).OrderBy(s => s.Id);
+                }
             }
         }
 
         public Sheet Sheet(string name)
         {
-            Sheet sheet = this.sheets.Where(s => s.Name == name).SingleOrDefault();
-            return sheet;
+            return this.sheets.SingleOrDefault(s => s.Name == name);
         }
 
         public WorkbookOptions Options

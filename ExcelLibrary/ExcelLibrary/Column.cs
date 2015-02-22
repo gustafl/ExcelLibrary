@@ -75,8 +75,14 @@ namespace ExcelLibrary
 
         public Cell Cell(int index)
         {
-            Cell cell = this.cells.Where(c => c.Row.Index == index).SingleOrDefault();
-            return cell;
+            if (this.Sheet.Workbook.Options.IncludeHidden)
+            {
+                return this.cells.SingleOrDefault(c => c.Row.Index == index);
+            }
+            else
+            {
+                return this.cells.SingleOrDefault(c => c.Row.Index == index && c.Row.Hidden == false);
+            }
         }
     }
 }
