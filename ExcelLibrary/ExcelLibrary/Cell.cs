@@ -12,6 +12,7 @@ namespace ExcelLibrary
         private Column column;
         private string value;
         private string type;
+        public bool HasText { get; set; }
 
         public Cell(string value)
         {
