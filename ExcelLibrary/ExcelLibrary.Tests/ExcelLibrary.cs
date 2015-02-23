@@ -10,14 +10,19 @@ namespace ExcelLibrary.Tests
     public class ExcelLibrary
     {
         private const string FILE = @"..\..\Input\test1.xlsx";
+        private const string FILE_ALLTYPES = @"..\..\Input\testAllTypes.xlsx";
 
         private Workbook workbook = null;
         private Workbook workbookWithIncludeHidden = null;
+
+        private Workbook workbook_AllTypes = null;
+        private Workbook workbookWithIncludeHidden_AllTypes = null;
 
         [TestInitialize]
         [TestCategory("Sheet")]
         public void Initialize()
         {
+            // regular test file initialize
             this.workbook = new Workbook();
             this.workbook.Open(FILE);
 
@@ -25,6 +30,15 @@ namespace ExcelLibrary.Tests
             options.IncludeHidden = true;
             this.workbookWithIncludeHidden = new Workbook();
             this.workbookWithIncludeHidden.Open(FILE, options);
+
+            // all types test file initialize
+            this.workbook_AllTypes = new Workbook();
+            this.workbook_AllTypes.Open(FILE_ALLTYPES);
+
+            WorkbookOptions options_AllTypes = new WorkbookOptions();
+            options_AllTypes.IncludeHidden = true;
+            this.workbookWithIncludeHidden_AllTypes = new Workbook();
+            this.workbookWithIncludeHidden_AllTypes.Open(FILE_ALLTYPES, options_AllTypes);
         }
 
         [TestMethod]
@@ -473,6 +487,59 @@ namespace ExcelLibrary.Tests
         }
 
         // TODO: Implement test for Cell.Type here.
+
+        // Cell.Type tests
+        [TestMethod]
+        [TestCategory("Cell")]
+        public void GetCellType()
+        {
+            Sheet sheet = this.workbook_AllTypes.Sheet("Sheet1");
+            sheet.Open();
+            IEnumerable<Cell> cells = sheet.Cells;
+            foreach (Cell c in cells)
+            {
+                Assert.IsFalse(c.Type.Equals(DBNull.Value));
+                Assert.IsFalse(c.Type.Equals("m"));
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Cell")]
+        public void CheckCellTypes()
+        {
+            Sheet sheet = this.workbook_AllTypes.Sheet("Sheet1");
+            sheet.Open();
+            IEnumerable<Cell> cells = sheet.Cells;
+            foreach (Cell c in cells)
+            {
+                if (c.Row.Index == 1)
+                {
+                    if (c.Column.Index == 1)
+                        Assert.AreSame("General", c.Type);
+                    if (c.Column.Index == 2)
+                        Assert.AreSame("General", c.Type);
+                    if (c.Column.Index == 3)
+                        Assert.AreSame("Number", c.Type);
+                    if (c.Column.Index == 4)
+                        Assert.AreSame("Currency", c.Type);
+                    if (c.Column.Index == 5)
+                        Assert.AreSame("Accounting", c.Type);
+                    if (c.Column.Index == 6)
+                        Assert.AreSame("Date", c.Type);
+                    if (c.Column.Index == 7)
+                        Assert.AreSame("Time", c.Type);
+                    if (c.Column.Index == 8)
+                        Assert.AreSame("Percentage", c.Type);
+                    if (c.Column.Index == 9)
+                        Assert.AreSame("Fraction", c.Type);
+                    if (c.Column.Index == 10)
+                        Assert.AreSame("Scientific", c.Type);
+                    if (c.Column.Index == 11)
+                        Assert.AreSame("Text", c.Type);
+                }
+            }
+        }
+
 
         [TestMethod]
         [TestCategory("Cell")]

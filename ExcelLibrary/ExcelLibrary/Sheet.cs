@@ -225,6 +225,23 @@ namespace ExcelLibrary
 
                     // Get cell position
                     string position = eCell.Attribute("r").Value;
+
+                    // Get if the cell has text
+                    string hasText_str = "";
+                    bool hasText = false;
+
+                    if(eCell.Attribute("t") != null)
+                    { 
+                        hasText_str = eCell.Attribute("t").Value;
+                        if (hasText_str == "s")
+                            hasText = true;
+                    }
+                    
+                    // Get cell type
+                    string type = "";
+                    if(eCell.Attribute("s") != null)
+                        type = eCell.Attribute("s").Value;
+
                     Match match = Regex.Match(position, @"([A-Z]+)(\d+)");
                     string letters = match.Groups[1].Value;
                     string numbers = match.Groups[2].Value;
@@ -232,9 +249,21 @@ namespace ExcelLibrary
                     int rowIndex = Convert.ToInt16(numbers);
 
                     // Get cell content
-                    int number = Convert.ToInt16(xValue.Value);
+                    int number;
                     string sharedString = string.Empty;
-                    this.workbook.SharedStrings.TryGetValue(number, out sharedString);
+
+                    // only try to load from SharedStrings if cell contains a string
+                    if(hasText)
+                    {
+                        number = Convert.ToInt32(xValue.Value);
+                        this.workbook.SharedStrings.TryGetValue(number, out sharedString);
+                    }
+                    
+                    else
+                    {
+                        sharedString = xValue.Value;
+                    }
+
 
                     // Make column
                     Column column = GetColumn(columnIndex);
@@ -242,8 +271,11 @@ namespace ExcelLibrary
                     
                     // Make cell
                     Cell cell = new Cell(sharedString);
+                    
                     cell.Column = column;
                     cell.Row = row;
+                    cell.Type = ConvertStringToType(type);
+                    cell.HasText = hasText;
 
                     // Add cell to row and column
                     row.AddCell(cell);
@@ -340,6 +372,33 @@ namespace ExcelLibrary
             {
                 column.Sheet = this;
                 this.columns.Add(column);
+            }
+        }
+
+        public string ConvertStringToType(string typeString)
+        {
+            switch (typeString)
+            {
+                case "1":
+                    return "Number";
+                case "2":
+                    return "Currency";
+                case "3":
+                    return "Accounting";
+                case "4":
+                    return "Date";
+                case "5":
+                    return "Time";
+                case "6":
+                    return "Percentage";
+                case "7":
+                    return "Fraction";
+                case "8":
+                    return "Scientific";
+                case "9":
+                    return "Text";
+                default:
+                    return "General";
             }
         }
     }

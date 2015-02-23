@@ -55,6 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Input\test1.xlsx" />
+    <None Include="Input\testAllTypes.xlsx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ExcelLibrary\ExcelLibrary.csproj">
