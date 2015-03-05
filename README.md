@@ -17,6 +17,7 @@ See the wiki for more examples.
 * No dependencies except .NET Framework 4.5. Easy to include in other solutions.
 * Built and extendable with LINQ. Most collections in the library (e.g. `Workbook.Sheets` or `Row.Cells`) is of type `IEnumerable<T>`, which  allows you to use LINQ queries to find exactly what you need.
 * Respects the visibility of sheets, rows and columns. Set the `IncludeHidden` option to `true`to return hidden objects.
+* Well-tested. The library is being developed using principles of Test-driven development (TDD). A large set of unit tests verifies that new bugs are not introduced on code changes.
 * Well-documented. A software library is only as useful as its documentation.
 
 ## Limitations
