@@ -5,6 +5,7 @@ This is a small C# library made to simplify reading from and writing to Excel wo
     Workbook workbook = new Workbook();
     workbook.Open("Book1.xlsx");
     Sheet sheet = workbook.Sheet("Sheet1");
+    sheet.Open();
     Row row = sheet.Row(2);
     Cell cell = row.Cell(3);
     string text = cell.Value;
@@ -32,4 +33,3 @@ The following things are planned but not yet implemented features:
 * Support for data types (the `Cell.Type` property).
 
 Also, the library will not create new workbooks _per se_, but the same can be achieved by including a template workbook in your project and copy it whenever you need to create a workbook.
-
