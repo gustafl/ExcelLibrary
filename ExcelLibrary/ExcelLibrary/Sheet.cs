@@ -105,7 +105,7 @@ namespace ExcelLibrary
             string letters = match.Groups[1].Value;
             string numbers = match.Groups[2].Value;
             int columnIndex = GetColumnIndex(letters);
-            int rowIndex = Convert.ToInt16(numbers);
+            int rowIndex = int.Parse(numbers);
 
             IEnumerable<Cell> cells = this.rows.SelectMany(r => r.Cells);
             Cell cell = FindCell(cells, rowIndex, columnIndex);
@@ -187,76 +187,89 @@ namespace ExcelLibrary
             using (ZipArchive archive = ZipFile.OpenRead(this.workbook.File))
             {
                 ZipArchiveEntry entry = archive.Entries.FirstOrDefault(e => e.FullName == this.Path.ToLower());
-                this.Load(entry);
+                XDocument document = XDocument.Load(entry.Open());
+                XElement root = document.Root;
+                XNamespace ns = NS_MAIN;
+
+                // Find hidden columns
+                List<int> hiddenColumns = GetHiddenColumns(root, ns);
+
+                // Loop throgh rows
+                XElement sheetData = root.Element(ns + "sheetData");
+                foreach (XElement eRow in sheetData.Elements(ns + "row"))
+                {
+                    // Skip empty rows
+                    if (eRow.Descendants(ns + "v").Count() == 0)
+                        continue;
+
+                    // Set row properties
+                    XAttribute attr1 = eRow.Attribute("r");
+                    XAttribute attr2 = eRow.Attribute("hidden");
+                    int index = int.Parse(attr1.Value);
+                    bool hidden = (attr2 != null && attr2.Value == "1") ? true : false;
+                    Row row = new Row(index, hidden);
+
+                    // Loop through cells on row
+                    foreach (XElement eCell in eRow.Elements(ns + "c"))
+                    {
+                        // Skip empty cells
+                        XElement xValue = eCell.Element(ns + "v");
+                        if (xValue == null)
+                            continue;
+
+                        // Get cell position
+                        string position = eCell.Attribute("r").Value;
+                        Match match = Regex.Match(position, @"([A-Z]+)(\d+)");
+                        string letters = match.Groups[1].Value;
+                        string numbers = match.Groups[2].Value;
+                        int columnIndex = GetColumnIndex(letters);
+                        int rowIndex = int.Parse(numbers);
+
+                        // Get shared string (if any)
+                        string sharedString = string.Empty;
+                        if (IsSharedString(eCell))
+                        {
+                            int number = int.Parse(xValue.Value);
+                            this.workbook.SharedStrings.TryGetValue(number, out sharedString);
+                        }
+
+                        // Make column
+                        Column column = GetColumn(columnIndex);
+                        column.Hidden = (hiddenColumns.Contains(columnIndex)) ? true : false;
+
+                        // Make cell
+                        string cellValue = (string.IsNullOrEmpty(sharedString)) ? xValue.Value : sharedString;
+                        Cell cell = new Cell(cellValue);
+                        cell.Column = column;
+                        cell.Row = row;
+
+                        // Add cell to row and column
+                        row.AddCell(cell);
+                        column.AddCell(cell);
+
+                        // Add rows and column to sheet
+                        this.AddRow(row);
+                        this.AddColumn(column);
+
+                        /* NOTE: We add rows and columns multiple times here and
+                         * let the add methods filter out existing ones. */
+                    }
+                }
             }
         }
 
-        private void Load(ZipArchiveEntry entry)
+        private bool IsSharedString(XElement cell) 
         {
-            XDocument document = XDocument.Load(entry.Open());
-            XElement root = document.Root;
-            XNamespace ns = NS_MAIN;
-
-            // Find hidden columns
-            List<int> hiddenColumns = GetHiddenColumns(root, ns);
-
-            // Loop throgh rows
-            XElement sheetData = root.Element(ns + "sheetData");
-            foreach (XElement eRow in sheetData.Elements(ns + "row"))
+            XAttribute attribute = cell.Attribute("t");
+            if (attribute != null)
             {
-                // Skip empty rows
-                if (eRow.Descendants(ns + "v").Count() == 0)
-                    continue;
-
-                // Set row properties
-                XAttribute attr1 = eRow.Attribute("r");
-                XAttribute attr2 = eRow.Attribute("hidden");
-                int index = Convert.ToInt16(attr1.Value);
-                bool hidden = (attr2 != null && attr2.Value == "1") ? true : false;
-                Row row = new Row(index, hidden);
-
-                // Loop through cells on row
-                foreach (XElement eCell in eRow.Elements(ns + "c"))
+                if (attribute.Value == "s")
                 {
-                    // Skip empty cells
-                    XElement xValue = eCell.Element(ns + "v");
-                    if (xValue == null)
-                        continue;
-
-                    // Get cell position
-                    string position = eCell.Attribute("r").Value;
-                    Match match = Regex.Match(position, @"([A-Z]+)(\d+)");
-                    string letters = match.Groups[1].Value;
-                    string numbers = match.Groups[2].Value;
-                    int columnIndex = GetColumnIndex(letters);
-                    int rowIndex = Convert.ToInt16(numbers);
-
-                    // Get cell content
-                    int number = Convert.ToInt16(xValue.Value);
-                    string sharedString = string.Empty;
-                    this.workbook.SharedStrings.TryGetValue(number, out sharedString);
-
-                    // Make column
-                    Column column = GetColumn(columnIndex);
-                    column.Hidden = (hiddenColumns.Contains(columnIndex)) ? true : false;
-                    
-                    // Make cell
-                    Cell cell = new Cell(sharedString);
-                    cell.Column = column;
-                    cell.Row = row;
-
-                    // Add cell to row and column
-                    row.AddCell(cell);
-                    column.AddCell(cell);
-
-                    // Add rows and column to sheet
-                    this.AddRow(row);
-                    this.AddColumn(column);
-
-                    /* We add rows and columns multiple times here and let
-                     * the add methods filter out existing ones. */
+                    return true;
                 }
             }
+
+            return false;
         }
 
         private ExcelLibrary.Column GetColumn(int columnIndex)
@@ -287,8 +300,8 @@ namespace ExcelLibrary
                     XAttribute aMax = eCol.Attribute("max");
                     XAttribute aHidden = eCol.Attribute("hidden");
 
-                    int min = (aMin != null) ? Convert.ToInt16(aMin.Value) : 0;
-                    int max = (aMax != null) ? Convert.ToInt16(aMax.Value) : 0;
+                    int min = (aMin != null) ? int.Parse(aMin.Value) : 0;
+                    int max = (aMax != null) ? int.Parse(aMax.Value) : 0;
                     bool hidden = (aHidden != null && aHidden.Value == "1") ? true : false;
                     
                     if (hidden == false)

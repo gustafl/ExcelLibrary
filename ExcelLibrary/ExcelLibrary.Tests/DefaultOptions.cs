@@ -7,24 +7,21 @@ using System.Diagnostics;
 namespace ExcelLibrary.Tests
 {
     [TestClass]
-    public class ExcelLibrary
+    public class DefaultOptions
     {
         private const string FILE = @"..\..\Input\test1.xlsx";
 
         private Workbook workbook = null;
-        private Workbook workbookWithIncludeHidden = null;
+        private WorkbookOptions options = null;
 
         [TestInitialize]
-        [TestCategory("Sheet")]
         public void Initialize()
         {
+            options = new WorkbookOptions();
+            options.IncludeHidden = false;
+            options.LoadSheets = true;
             this.workbook = new Workbook();
-            this.workbook.Open(FILE);
-
-            WorkbookOptions options = new WorkbookOptions();
-            options.IncludeHidden = true;
-            this.workbookWithIncludeHidden = new Workbook();
-            this.workbookWithIncludeHidden.Open(FILE, options);
+            this.workbook.Open(FILE, options);
         }
 
         [TestMethod]
@@ -32,13 +29,6 @@ namespace ExcelLibrary.Tests
         public void OpenWorkbook()
         {
             Assert.IsInstanceOfType(this.workbook, typeof(Workbook));
-        }
-
-        [TestMethod]
-        [TestCategory("Workbook")]
-        public void OpenWorkbookWithIncludeHidden()
-        {
-            Assert.IsInstanceOfType(this.workbookWithIncludeHidden, typeof(Workbook));
         }
 
         [TestMethod]
@@ -52,13 +42,19 @@ namespace ExcelLibrary.Tests
         [TestCategory("Workbook")]
         public void GetWorkbookOptionsIncludeHidden()
         {
-            WorkbookOptions options = this.workbookWithIncludeHidden.Options;
-            Assert.AreEqual(true, options.IncludeHidden);
+            Assert.AreEqual(false, this.options.IncludeHidden);
         }
 
         [TestMethod]
         [TestCategory("Workbook")]
-        public void GetSheetsExcludingHidden()
+        public void GetWorkbookOptionsLoadSheets()
+        {
+            Assert.AreEqual(true, this.options.LoadSheets);
+        }
+
+        [TestMethod]
+        [TestCategory("Workbook")]
+        public void GetSheets()
         {
             var sheets = this.workbook.Sheets;
             Assert.AreEqual(3, sheets.Count());
@@ -66,17 +62,9 @@ namespace ExcelLibrary.Tests
 
         [TestMethod]
         [TestCategory("Workbook")]
-        public void GetSheetsIncludingHidden()
-        {
-            var sheets = this.workbookWithIncludeHidden.Sheets;
-            Assert.AreEqual(4, sheets.Count());
-        }
-
-        [TestMethod]
-        [TestCategory("Workbook")]
         public void GetSharedStrings()
         {
-            Assert.AreEqual(5, this.workbook.SharedStrings.Count);
+            Assert.AreEqual(35, this.workbook.SharedStrings.Count);
         }
 
         [TestMethod]
@@ -121,43 +109,9 @@ namespace ExcelLibrary.Tests
 
         [TestMethod]
         [TestCategory("Sheet")]
-        public void OpenSheet()
+        public void GetRows()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
-            Assert.IsInstanceOfType(sheet, typeof(Sheet));
-        }
-
-        [TestMethod]
-        [TestCategory("Sheet")]
-        public void GetRowsExcludingHidden()
-        {
-            Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
-            var rows = sheet.Rows;
-            foreach (Row row in rows)
-                Debug.WriteLine("{0}", row.Index);
-            Assert.AreEqual(3, rows.Count());
-        }
-
-        [TestMethod]
-        [TestCategory("Sheet")]
-        public void GetColumnsExcludingHidden()
-        {
-            Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
-            var columns = sheet.Columns;
-            foreach (Column column in columns)
-                Debug.WriteLine("{0}", column.Index);
-            Assert.AreEqual(3, columns.Count());
-        }
-
-        [TestMethod]
-        [TestCategory("Sheet")]
-        public void GetRowsIncludingHidden()
-        {
-            Sheet sheet = this.workbookWithIncludeHidden.Sheet("Sheet1");
-            sheet.Open();
             var rows = sheet.Rows;
             foreach (Row row in rows)
                 Debug.WriteLine("{0}", row.Index);
@@ -166,14 +120,13 @@ namespace ExcelLibrary.Tests
 
         [TestMethod]
         [TestCategory("Sheet")]
-        public void GetColumnsIncludingHidden()
+        public void GetColumns()
         {
-            Sheet sheet = this.workbookWithIncludeHidden.Sheet("Sheet1");
-            sheet.Open();
+            Sheet sheet = this.workbook.Sheet("Sheet1");
             var columns = sheet.Columns;
             foreach (Column column in columns)
                 Debug.WriteLine("{0}", column.Index);
-            Assert.AreEqual(4, columns.Count());
+            Assert.AreEqual(3, columns.Count());
         }
 
         [TestMethod]
@@ -181,7 +134,6 @@ namespace ExcelLibrary.Tests
         public void GetRowByIndex()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Row row = sheet.Row(2);
             string text = row.Cell(2).Value;
             Assert.AreEqual("Banana", text);
@@ -192,7 +144,6 @@ namespace ExcelLibrary.Tests
         public void GetColumnByIndex()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Column column = sheet.Column(2);
             string text = column.Cell(2).Value;
             Assert.AreEqual("Banana", text);
@@ -200,30 +151,19 @@ namespace ExcelLibrary.Tests
 
         [TestMethod]
         [TestCategory("Sheet")]
-        public void GetAllCellsExcludingHidden()
+        public void GetAllCells()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             IEnumerable<Cell> cells = sheet.Cells;
-            Assert.AreEqual(3, cells.Count());
+            Assert.AreEqual(4, cells.Count());
         }
 
-        [TestMethod]
-        [TestCategory("Sheet")]
-        public void GetAllCellsIncludingHidden()
-        {
-            Sheet sheet = this.workbookWithIncludeHidden.Sheet("Sheet1");
-            sheet.Open();
-            IEnumerable<Cell> cells = sheet.Cells;
-            Assert.AreEqual(5, cells.Count());
-        }
 
         [TestMethod]
         [TestCategory("Sheet")]
         public void GetCellByRowAndColumn()
         {
-            Sheet sheet = this.workbookWithIncludeHidden.Sheet("Sheet1");
-            sheet.Open();
+            Sheet sheet = this.workbook.Sheet("Sheet1");
             Cell cell = sheet.Cell(2, 2);
             Assert.AreEqual("Banana", cell.Value);
         }
@@ -232,8 +172,7 @@ namespace ExcelLibrary.Tests
         [TestCategory("Sheet")]
         public void GetCellByName()
         {
-            Sheet sheet = this.workbookWithIncludeHidden.Sheet("Sheet1");
-            sheet.Open();
+            Sheet sheet = this.workbook.Sheet("Sheet1");
             Cell cell = sheet.Cell("B2");
             Assert.AreEqual("Banana", cell.Value);
         }
@@ -242,8 +181,7 @@ namespace ExcelLibrary.Tests
         [TestCategory("Sheet")]
         public void SameNumberOfCellsInRowsAndColumns()
         {
-            Sheet sheet = this.workbookWithIncludeHidden.Sheet("Sheet1");
-            sheet.Open();
+            Sheet sheet = this.workbook.Sheet("Sheet1");
             int rowCellCount = sheet.Rows.SelectMany(r => r.Cells).Count();
             int columnCellCount = sheet.Columns.SelectMany(c => c.Cells).Count();
             Assert.AreEqual(rowCellCount, columnCellCount);
@@ -251,19 +189,10 @@ namespace ExcelLibrary.Tests
 
         [TestMethod]
         [TestCategory("Sheet")]
-        public void TryGetRowsBeforeCallingSheetOpen()
-        {
-            Sheet sheet = this.workbook.Sheet("Sheet1");
-            IEnumerable<Row> rows = sheet.Rows;
-            Assert.AreEqual(0, rows.Count());
-        }
-
-        [TestMethod]
-        [TestCategory("Sheet")]
         public void TryGetNonExistingRowByIndex()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            Row row = sheet.Row(1);
+            Row row = sheet.Row(100);
             Assert.IsNull(row);
         }
 
@@ -272,7 +201,7 @@ namespace ExcelLibrary.Tests
         public void TryGetNonExistingColumnByIndex()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            Column column = sheet.Column(1);
+            Column column = sheet.Column(100);
             Assert.IsNull(column);
         }
 
@@ -281,7 +210,6 @@ namespace ExcelLibrary.Tests
         public void TryGetHiddenRowWithIncludeHiddenFalse()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Row row = sheet.Row(8);
             Assert.IsNull(row);
         }
@@ -291,7 +219,6 @@ namespace ExcelLibrary.Tests
         public void TryGetHiddenColumnWithIncludeHiddenFalse()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Column column = sheet.Column(5);
             Assert.IsNull(column);
         }
@@ -300,8 +227,7 @@ namespace ExcelLibrary.Tests
         [TestCategory("Sheet")]
         public void TryGetCellsOnEmptySheet()
         {
-            Sheet sheet = this.workbook.Sheet("Sheet2");
-            sheet.Open();
+            Sheet sheet = this.workbook.Sheet("Sheet3");
             IEnumerable<Cell> cells = sheet.Cells;
             Assert.AreEqual(0, cells.Count());
         }
@@ -311,8 +237,7 @@ namespace ExcelLibrary.Tests
         public void TryGetNonExistingCellByRowIndexAndColumnIndex()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
-            Cell cell = sheet.Cell(1, 1);
+            Cell cell = sheet.Cell(100, 100);
             Assert.IsNull(cell);
         }
 
@@ -321,8 +246,7 @@ namespace ExcelLibrary.Tests
         public void TryGetNonExistingCellByName()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
-            Cell cell = sheet.Cell("A1");
+            Cell cell = sheet.Cell("A100");
             Assert.IsNull(cell);
         }
 
@@ -331,7 +255,6 @@ namespace ExcelLibrary.Tests
         public void TryGetCellInHiddenRow()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Cell cell = sheet.Cell(8, 3);
             Assert.IsNull(cell);
         }
@@ -341,7 +264,6 @@ namespace ExcelLibrary.Tests
         public void TryGetCellInHiddenColumn()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Cell cell = sheet.Cell(2, 5);
             Assert.IsNull(cell);
         }
@@ -351,19 +273,8 @@ namespace ExcelLibrary.Tests
         public void GetRowIndex()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Row row = sheet.Row(2);
             Assert.AreEqual(2, row.Index);
-        }
-
-        [TestMethod]
-        [TestCategory("Row")]
-        public void GetRowHidden()
-        {
-            Sheet sheet = this.workbookWithIncludeHidden.Sheet("Sheet1");
-            sheet.Open();
-            Row row = sheet.Row(8);
-            Assert.AreEqual(true, row.Hidden);
         }
 
         [TestMethod]
@@ -371,7 +282,6 @@ namespace ExcelLibrary.Tests
         public void GetRowSheet()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Row row = sheet.Row(2);
             Assert.AreSame(sheet, row.Sheet);
         }
@@ -380,19 +290,17 @@ namespace ExcelLibrary.Tests
         [TestCategory("Row")]
         public void GetCellsInRow()
         {
-            Sheet sheet = this.workbookWithIncludeHidden.Sheet("Sheet1");
-            sheet.Open();
+            Sheet sheet = this.workbook.Sheet("Sheet1");
             Row row = sheet.Row(2);
             int cellCount = row.Cells.Count();
-            Assert.AreEqual(2, cellCount);
+            Assert.AreEqual(1, cellCount);
         }
 
         [TestMethod]
         [TestCategory("Row")]
         public void GetCellByColumn()
         {
-            Sheet sheet = this.workbookWithIncludeHidden.Sheet("Sheet1");
-            sheet.Open();
+            Sheet sheet = this.workbook.Sheet("Sheet1");
             Row row = sheet.Row(2);
             Cell cell = row.Cell(2);
             Assert.AreEqual("Banana", cell.Value);
@@ -403,7 +311,6 @@ namespace ExcelLibrary.Tests
         public void TryGetRowCellInHiddenColumn()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Row row = sheet.Row(2);
             Cell cell = row.Cell(5);
             Assert.IsNull(cell);
@@ -414,19 +321,8 @@ namespace ExcelLibrary.Tests
         public void GetColumnIndex()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Column column = sheet.Column(2);
             Assert.AreEqual(2, column.Index);
-        }
-
-        [TestMethod]
-        [TestCategory("Column")]
-        public void GetColumnHidden()
-        {
-            Sheet sheet = this.workbookWithIncludeHidden.Sheet("Sheet1");
-            sheet.Open();
-            Column column = sheet.Column(5);
-            Assert.AreEqual(true, column.Hidden);
         }
 
         [TestMethod]
@@ -434,7 +330,6 @@ namespace ExcelLibrary.Tests
         public void GetColumnSheet()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Column column = sheet.Column(2);
             Assert.AreSame(sheet, column.Sheet);
         }
@@ -443,11 +338,10 @@ namespace ExcelLibrary.Tests
         [TestCategory("Column")]
         public void GetCellsInColumn()
         {
-            Sheet sheet = this.workbookWithIncludeHidden.Sheet("Sheet1");
-            sheet.Open();
+            Sheet sheet = this.workbook.Sheet("Sheet1");
             Column column = sheet.Column(3);
             int cellCount = column.Cells.Count();
-            Assert.AreEqual(2, cellCount);
+            Assert.AreEqual(1, cellCount);
         }
 
         [TestMethod]
@@ -455,7 +349,6 @@ namespace ExcelLibrary.Tests
         public void GetCellByRow()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Column column = sheet.Column(2);
             Cell cell = column.Cell(2);
             Assert.AreEqual("Banana", cell.Value);
@@ -466,20 +359,16 @@ namespace ExcelLibrary.Tests
         public void TryGetColumnCellInHiddenRow()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Column column = sheet.Column(3);
             Cell cell = column.Cell(8);
             Assert.IsNull(cell);
         }
-
-        // TODO: Implement test for Cell.Type here.
 
         [TestMethod]
         [TestCategory("Cell")]
         public void GetCellValue()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Row row = sheet.Row(2);
             Cell cell = row.Cell(2);
             Assert.AreEqual("Banana", cell.Value);
@@ -490,7 +379,6 @@ namespace ExcelLibrary.Tests
         public void GetCellRow()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Row row = sheet.Row(2);
             Cell cell = row.Cell(2);
             Assert.AreSame(row, cell.Row);
@@ -501,10 +389,13 @@ namespace ExcelLibrary.Tests
         public void GetCellColumn()
         {
             Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
             Column column = sheet.Column(2);
             Cell cell = column.Cell(2);
             Assert.AreSame(column, cell.Column);
         }
+
+        // TODO: GetCellFormat()
+        // TODO: GetCellValueFromSharedStrings()
+        // TODO: GetCellValueFromInlineString()
     }
 }

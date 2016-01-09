@@ -50,7 +50,9 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="ExcelLibrary.cs" />
+    <Compile Include="DefaultOptions.cs" />
+    <Compile Include="LoadSheetsIsFalse.cs" />
+    <Compile Include="IncludeHiddenIsTrue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

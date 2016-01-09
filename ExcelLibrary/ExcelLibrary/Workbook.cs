@@ -19,6 +19,7 @@ namespace ExcelLibrary
         private string file;
         private List<Sheet> sheets;
         private Dictionary<int, string> sharedStrings;
+        private Dictionary<int, int> numberFormats;
         private WorkbookOptions options;
 
         public void Open(string file)
@@ -26,6 +27,7 @@ namespace ExcelLibrary
             this.file = file;
             this.sheets = new List<Sheet>();
             this.sharedStrings = new Dictionary<int, string>();
+            this.numberFormats = new Dictionary<int, int>();
             this.options = new WorkbookOptions();
             Open();
         }
@@ -35,6 +37,7 @@ namespace ExcelLibrary
             this.file = file;
             this.sheets = new List<Sheet>();
             this.sharedStrings = new Dictionary<int, string>();
+            this.numberFormats = new Dictionary<int, int>();
             this.options = options;
             Open();
         }
@@ -54,6 +57,19 @@ namespace ExcelLibrary
                 // Read "xl/sharedStrings.xml" to get shared strings
                 ZipArchiveEntry sharedStringsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/sharedStrings.xml");
                 LoadSharedStrings(sharedStringsEntry);
+
+                // Read "xl/styles.xml" to get number formats
+                ZipArchiveEntry stylesEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/styles.xml");
+                LoadStyles(stylesEntry);
+
+                // Optionally load all sheets
+                if (options.LoadSheets)
+                {
+                    foreach (Sheet sheet in this.sheets)
+                    {
+                        sheet.Open();
+                    }
+                }
             }
         }
 
@@ -72,7 +88,9 @@ namespace ExcelLibrary
 
                 bool hidden = false;
                 if (state != null && state.Value == "hidden")
+                {
                     hidden = true;
+                }
 
                 Sheet sheet = new Sheet(name.Value, id.Value, hidden);
                 sheet.Workbook = this;
@@ -93,7 +111,9 @@ namespace ExcelLibrary
                 XAttribute target = element.Attribute("Target");
 
                 if (type.Value != NS_ORW)
+                {
                     continue;
+                }
 
                 Sheet sheet = (from s in this.sheets
                                where s.Id == id.Value
@@ -108,9 +128,11 @@ namespace ExcelLibrary
 
         private void LoadSharedStrings(ZipArchiveEntry entry)
         {
-            // The xl/sharedStrings.xml file will be missing in a completely blank file
+            // The xl/sharedStrings.xml file will be missing if there are no strings
             if (entry == null)
+            {
                 return;
+            }
 
             XDocument document = XDocument.Load(entry.Open());
             XElement root = document.Root;
@@ -122,10 +144,33 @@ namespace ExcelLibrary
                 IEnumerable<XElement> ts = si.Descendants(ns + "t");
                 string sum = string.Empty;
                 foreach (XElement t in ts)
+                {
                     sum += t.Value;
+                }
 
                 this.sharedStrings.Add(count, sum);
                 count++;
+            }
+        }
+
+        private void LoadStyles(ZipArchiveEntry entry)
+        {
+            XDocument document = XDocument.Load(entry.Open());
+            XNamespace ns = NS_MAIN;
+            XElement cellXfs = document.Root.Element(ns + "cellXfs");
+            foreach (XElement element in cellXfs.Elements())
+            {
+                XAttribute applyNumberFormat = element.Attribute("applyNumberFormat");
+                XAttribute numFmtId = element.Attribute("numFmtId");
+                if (applyNumberFormat != null && numFmtId != null)
+                {
+                    int sId = int.Parse(applyNumberFormat.Value);
+                    int numberFormatId = int.Parse(numFmtId.Value);
+                    if (!this.numberFormats.ContainsKey(sId))
+                    {
+                        this.numberFormats.Add(sId, numberFormatId);
+                    }
+                }
             }
         }
 
@@ -163,6 +208,11 @@ namespace ExcelLibrary
         public Dictionary<int, string> SharedStrings
         {
             get { return this.sharedStrings; }
+        }
+
+        public Dictionary<int, int> NumberFormats
+        {
+            get { return this.numberFormats; }
         }
     }
 }

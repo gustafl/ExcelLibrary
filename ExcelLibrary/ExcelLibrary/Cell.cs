@@ -11,7 +11,7 @@ namespace ExcelLibrary
         private Row row;
         private Column column;
         private string value;
-        private string type;
+        private NumberFormat format;
 
         public Cell(string value)
         {
@@ -30,10 +30,10 @@ namespace ExcelLibrary
             set { this.column = value; }
         }
 
-        public string Type
+        public NumberFormat Format
         {
-            get { return this.type; }
-            set { this.type = value; }
+            get { return this.format; }
+            set { this.format = value; }
         }
 
         public string Value
