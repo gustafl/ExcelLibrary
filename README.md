@@ -1,6 +1,6 @@
 # ExcelLibrary
 
-This is a small C# library made to simplify reading from Excel workbooks in the Open XML file format (.xlsx). Here's an example to get you started:
+This is a small C# library made to simplify reading from and writing to Excel workbooks in the Open XML file format (.xlsx). Here's an example to get you started:
     
     Workbook workbook = new Workbook();
     workbook.Open("Book1.xlsx");
