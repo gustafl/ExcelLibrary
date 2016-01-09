@@ -26,6 +26,13 @@ namespace ExcelLibrary.Tests
 
         [TestMethod]
         [TestCategory("Workbook")]
+        public void GetWorkbookOptionsIncludeHidden()
+        {
+            Assert.AreEqual(true, this.options.IncludeHidden);
+        }
+
+        [TestMethod]
+        [TestCategory("Workbook")]
         public void GetSheetsIncludingHidden()
         {
             var sheets = this.workbook.Sheets;

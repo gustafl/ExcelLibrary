@@ -18,10 +18,17 @@ namespace ExcelLibrary.Tests
         public void Initialize()
         {
             options = new WorkbookOptions();
-            options.IncludeHidden = false;
+            options.IncludeHidden = true;
             options.LoadSheets = false;
             this.workbook = new Workbook();
             this.workbook.Open(FILE, options);
+        }
+
+        [TestMethod]
+        [TestCategory("Workbook")]
+        public void GetWorkbookOptionsLoadSheets()
+        {
+            Assert.AreEqual(false, this.options.LoadSheets);
         }
 
         [TestMethod]

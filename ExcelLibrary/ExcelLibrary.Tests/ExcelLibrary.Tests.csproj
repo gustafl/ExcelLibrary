@@ -53,10 +53,12 @@
     <Compile Include="DefaultOptions.cs" />
     <Compile Include="LoadSheetsIsFalse.cs" />
     <Compile Include="IncludeHiddenIsTrue.cs" />
+    <Compile Include="NumberFormats.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Input\test1.xlsx" />
+    <None Include="Input\test2.xlsx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ExcelLibrary\ExcelLibrary.csproj">

@@ -12,16 +12,12 @@ namespace ExcelLibrary.Tests
         private const string FILE = @"..\..\Input\test1.xlsx";
 
         private Workbook workbook = null;
-        private WorkbookOptions options = null;
 
         [TestInitialize]
         public void Initialize()
         {
-            options = new WorkbookOptions();
-            options.IncludeHidden = false;
-            options.LoadSheets = true;
             this.workbook = new Workbook();
-            this.workbook.Open(FILE, options);
+            this.workbook.Open(FILE);
         }
 
         [TestMethod]
@@ -38,19 +34,7 @@ namespace ExcelLibrary.Tests
             Assert.AreEqual(FILE, this.workbook.File);
         }
 
-        [TestMethod]
-        [TestCategory("Workbook")]
-        public void GetWorkbookOptionsIncludeHidden()
-        {
-            Assert.AreEqual(false, this.options.IncludeHidden);
-        }
 
-        [TestMethod]
-        [TestCategory("Workbook")]
-        public void GetWorkbookOptionsLoadSheets()
-        {
-            Assert.AreEqual(true, this.options.LoadSheets);
-        }
 
         [TestMethod]
         [TestCategory("Workbook")]
