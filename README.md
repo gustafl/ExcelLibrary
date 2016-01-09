@@ -1,11 +1,10 @@
 # ExcelLibrary
 
-This is a small C# library made to simplify reading from and writing to Excel workbooks (.xlsx). Here's an example to get you started:
-
+This is a small C# library made to simplify reading from and writing to Excel workbooks in the Open XML file format (.xlsx). Here's an example to get you started:
+    
     Workbook workbook = new Workbook();
     workbook.Open("Book1.xlsx");
     Sheet sheet = workbook.Sheet("Sheet1");
-    sheet.Open();
     Row row = sheet.Row(2);
     Cell cell = row.Cell(3);
     string text = cell.Value;
@@ -31,6 +30,6 @@ The following things have been considered outside the scope of the project:
 The following things are planned but not yet implemented features:
 
 * All write functionality (writing to cells, adding new sheets, adding and deleting rows and columns and so on).
-* Support for data types (the `Cell.Type` property).
+* Support for data types (the `Cell.Format` property).
 
 Also, the library will not create new workbooks _per se_, but the same can be achieved by including a template workbook in your project and copy it whenever you need to create a workbook.
