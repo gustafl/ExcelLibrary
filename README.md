@@ -30,6 +30,7 @@ The following things have been considered outside the scope of the project:
 The following things are planned but not yet implemented features:
 
 * All write functionality (writing to cells, adding new sheets, adding and deleting rows and columns and so on).
-* Support for data types (the `Cell.Format` property).
 
 Also, the library will not create new workbooks _per se_, but the same can be achieved by including a template workbook in your project and copy it whenever you need to create a workbook.
+
+For more on project status, see the [Current status](../../wiki/Current-status) page in the wiki.
