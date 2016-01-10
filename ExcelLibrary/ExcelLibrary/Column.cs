@@ -11,20 +11,18 @@ namespace ExcelLibrary
         private int index;
         private bool hidden;
         private Sheet sheet;
-        private List<Cell> cells;
+        private List<Cell> cells = new List<Cell>();
 
         public Column(int index)
         {
             this.index = index;
             this.hidden = false;
-            this.cells = new List<Cell>();
         }
 
         public Column(int index, bool hidden)
         {
             this.index = index;
             this.hidden = hidden;
-            this.cells = new List<Cell>();
         }
 
         public int Index

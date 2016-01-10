@@ -18,14 +18,12 @@ namespace ExcelLibrary
         private string path;
         private bool hidden;
         private Workbook workbook;
-        private List<Row> rows;
-        private List<Column> columns;
+        private List<Row> rows = new List<Row>();
+        private List<Column> columns = new List<Column>();
 
         public Sheet(string name)
         {
             this.name = name;
-            this.rows = new List<Row>();
-            this.columns = new List<Column>();
         }
 
         public Sheet(string name, string id, bool hidden)
@@ -33,8 +31,6 @@ namespace ExcelLibrary
             this.name = name;
             this.id = id;
             this.hidden = hidden;
-            this.rows = new List<Row>();
-            this.columns = new List<Column>();
         }
 
         public string Name
@@ -200,7 +196,9 @@ namespace ExcelLibrary
                 {
                     // Skip empty rows
                     if (eRow.Descendants(ns + "v").Count() == 0)
+                    {
                         continue;
+                    }
 
                     // Set row properties
                     XAttribute attr1 = eRow.Attribute("r");
@@ -215,7 +213,9 @@ namespace ExcelLibrary
                         // Skip empty cells
                         XElement xValue = eCell.Element(ns + "v");
                         if (xValue == null)
+                        {
                             continue;
+                        }
 
                         // Get cell position
                         string position = eCell.Attribute("r").Value;
@@ -224,6 +224,15 @@ namespace ExcelLibrary
                         string numbers = match.Groups[2].Value;
                         int columnIndex = GetColumnIndex(letters);
                         int rowIndex = int.Parse(numbers);
+
+                        // Get cell style
+                        XAttribute s = eCell.Attribute("s");
+                        NumberFormat format = NumberFormat.General;
+                        if (s != null)
+                        {
+                            int styleIndex = int.Parse(s.Value);
+                            format = (NumberFormat)this.workbook.NumberFormats[styleIndex];
+                        }
 
                         // Get shared string (if any)
                         string sharedString = string.Empty;
@@ -242,6 +251,19 @@ namespace ExcelLibrary
                         Cell cell = new Cell(cellValue);
                         cell.Column = column;
                         cell.Row = row;
+                        cell.Format = format;
+
+                        switch (format)
+                        {
+                            case NumberFormat.Date:
+                                cell.Value = Utilities.ConvertDate(cell.Value, this.workbook.BaseYear);
+                                break;
+                            case NumberFormat.Time:
+                                cell.Value = Utilities.ConvertTime(cell.Value);
+                                break;
+                            default:
+                                break;
+                        }
 
                         // Add cell to row and column
                         row.AddCell(cell);

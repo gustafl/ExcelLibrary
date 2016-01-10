@@ -19,6 +19,9 @@ namespace ExcelLibrary
         Scientific,
         Text,
         Special,
-        Custom
+        Custom,
+        Unsupported
     };
+
+    /* NOTE: The Unsupported number format is custom to this library. */
 }

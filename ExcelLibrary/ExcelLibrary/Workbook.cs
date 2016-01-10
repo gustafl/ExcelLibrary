@@ -17,27 +17,21 @@ namespace ExcelLibrary
         private const string NS_ORW = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet";
 
         private string file;
-        private List<Sheet> sheets;
-        private Dictionary<int, string> sharedStrings;
-        private Dictionary<int, int> numberFormats;
-        private WorkbookOptions options;
+        private List<Sheet> sheets = new List<Sheet>();
+        private Dictionary<int, string> sharedStrings = new Dictionary<int, string>();
+        private Dictionary<int, NumberFormat> numberFormats = new Dictionary<int, NumberFormat>();
+        private WorkbookOptions options = new WorkbookOptions();
+        private int baseYear = 1900;
 
         public void Open(string file)
         {
             this.file = file;
-            this.sheets = new List<Sheet>();
-            this.sharedStrings = new Dictionary<int, string>();
-            this.numberFormats = new Dictionary<int, int>();
-            this.options = new WorkbookOptions();
             Open();
         }
 
         public void Open(string file, WorkbookOptions options)
         {
             this.file = file;
-            this.sheets = new List<Sheet>();
-            this.sharedStrings = new Dictionary<int, string>();
-            this.numberFormats = new Dictionary<int, int>();
             this.options = options;
             Open();
         }
@@ -79,6 +73,13 @@ namespace ExcelLibrary
             XElement root = document.Root;
             XNamespace ns = NS_MAIN;
             XNamespace r = NS_OR;
+
+            XElement workbookPr = root.Element(ns + "workbookPr");
+            XAttribute date1904 = workbookPr.Attribute("date1904");
+            if (date1904 != null && date1904.Value == "1")
+            {
+                this.baseYear = 1904;
+            }
 
             foreach (XElement element in root.Element(ns + "sheets").Elements())
             {
@@ -158,18 +159,54 @@ namespace ExcelLibrary
             XDocument document = XDocument.Load(entry.Open());
             XNamespace ns = NS_MAIN;
             XElement cellXfs = document.Root.Element(ns + "cellXfs");
+            int index = 0;
+
             foreach (XElement element in cellXfs.Elements())
             {
-                XAttribute applyNumberFormat = element.Attribute("applyNumberFormat");
                 XAttribute numFmtId = element.Attribute("numFmtId");
-                if (applyNumberFormat != null && numFmtId != null)
+                if (numFmtId != null)
                 {
-                    int sId = int.Parse(applyNumberFormat.Value);
                     int numberFormatId = int.Parse(numFmtId.Value);
-                    if (!this.numberFormats.ContainsKey(sId))
+                    switch (numberFormatId)
                     {
-                        this.numberFormats.Add(sId, numberFormatId);
+                        case 0:
+                            this.numberFormats.Add(index, NumberFormat.General);
+                            break;
+                        case 2:
+                            this.numberFormats.Add(index, NumberFormat.Number);
+                            break;
+                        case 164:
+                            this.numberFormats.Add(index, NumberFormat.Currency);
+                            break;
+                        case 44:
+                            this.numberFormats.Add(index, NumberFormat.Accounting);
+                            break;
+                        case 14:
+                            this.numberFormats.Add(index, NumberFormat.Date);
+                            break;
+                        case 165:
+                            this.numberFormats.Add(index, NumberFormat.Time);
+                            break;
+                        case 49:
+                            this.numberFormats.Add(index, NumberFormat.Text);
+                            break;
+                        case 10:
+                            this.numberFormats.Add(index, NumberFormat.Percentage);
+                            break;
+                        case 13:
+                            this.numberFormats.Add(index, NumberFormat.Fraction);
+                            break;
+                        case 166:
+                            this.numberFormats.Add(index, NumberFormat.Custom);
+                            break;
+                        case 11:
+                            this.numberFormats.Add(index, NumberFormat.Scientific);
+                            break;
+                        default:
+                            this.numberFormats.Add(index, NumberFormat.Unsupported);
+                            break;
                     }
+                    index++;
                 }
             }
         }
@@ -210,9 +247,14 @@ namespace ExcelLibrary
             get { return this.sharedStrings; }
         }
 
-        public Dictionary<int, int> NumberFormats
+        public Dictionary<int, NumberFormat> NumberFormats
         {
             get { return this.numberFormats; }
+        }
+
+        public int BaseYear
+        {
+            get { return this.baseYear; }
         }
     }
 }
