@@ -1,6 +1,0 @@
-Issue ID,Description,State,Severity,Story Points,Project Path,Location Kind,Path,Line,Column,Incident ID,Help Link,Assembly Name,Assembly Version,Assembly Public Key,Snippet
-Project.0001,Project file needs to be converted to SDK-style,Active,Mandatory,1,ExcelLibrary\ExcelLibrary.csproj,File,ExcelLibrary\ExcelLibrary.csproj,,,,,,,,
-Project.0002,Project's target framework(s) needs to be changed,Active,Mandatory,1,ExcelLibrary\ExcelLibrary.csproj,File,ExcelLibrary\ExcelLibrary.csproj,,,,,,,,"Current target framework: .NETFramework,Version=v4.8 Recommended target framework: net10.0"
-Api.0002,Source incompatible for selected .NET version,Active,Potential,1,ExcelLibrary\ExcelLibrary.csproj,File,ExcelLibrary\Utilities.cs,26,12,M:System.TimeSpan.FromSeconds(System.Double),,,,,TimeSpan span = TimeSpan.FromSeconds(seconds);
-Project.0001,Project file needs to be converted to SDK-style,Active,Mandatory,1,ExcelLibrary.Tests\ExcelLibrary.Tests.csproj,File,ExcelLibrary.Tests\ExcelLibrary.Tests.csproj,,,,,,,,
-Project.0002,Project's target framework(s) needs to be changed,Active,Mandatory,1,ExcelLibrary.Tests\ExcelLibrary.Tests.csproj,File,ExcelLibrary.Tests\ExcelLibrary.Tests.csproj,,,,,,,,"Current target framework: .NETFramework,Version=v4.8 Recommended target framework: net10.0"
