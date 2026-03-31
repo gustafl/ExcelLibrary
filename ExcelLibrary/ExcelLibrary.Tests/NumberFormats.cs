@@ -9,7 +9,7 @@ namespace ExcelLibrary.Tests
     [TestClass]
     public class NumberFormats
     {
-        private const string FILE = @"..\..\Input\test2.xlsx";
+        private const string FILE = @"..\..\..\Input\test2.xlsx";
 
         private Workbook workbook = null;
         private Sheet sheet = null;

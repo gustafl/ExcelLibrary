@@ -9,7 +9,7 @@ namespace ExcelLibrary.Tests
     [TestClass]
     public class DefaultOptions
     {
-        private const string FILE = @"..\..\Input\test1.xlsx";
+        private const string FILE = @"..\..\..\Input\test1.xlsx";
 
         private Workbook workbook = null;
 
