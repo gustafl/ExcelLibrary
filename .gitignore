@@ -1,10 +1,4 @@
+.vs/
+bin/
 obj/
-*.dll
-*.pdb
-*.user
-*.cache
-*.suo
-*.manifest
-*.config
-*.exe
-*.txt
+
