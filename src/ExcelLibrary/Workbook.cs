@@ -36,193 +36,129 @@ public class Workbook
 
     private void Open()
     {
-        using (ZipArchive archive = ZipFile.OpenRead(File))
+        using var archive = ZipFile.OpenRead(File);
+
+        // Read "xl/workbook.xml" to get sheet names and ids
+        var sheetsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/workbook.xml");
+        LoadWorkbookXml(sheetsEntry);
+
+        // Read "xl/_rels/workbook.xml.rels" to get sheet paths
+        var sheetPathsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/_rels/workbook.xml.rels");
+        LoadWorkbookXmlRels(sheetPathsEntry);
+
+        // Read "xl/sharedStrings.xml" to get shared strings
+        var sharedStringsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/sharedStrings.xml");
+        LoadSharedStrings(sharedStringsEntry);
+
+        // Read "xl/styles.xml" to get number formats
+        var stylesEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/styles.xml");
+        LoadStyles(stylesEntry);
+
+        // Optionally load all sheets
+        if (Options.LoadSheets)
         {
-            // Read "xl/workbook.xml" to get sheet names and ids
-            ZipArchiveEntry sheetsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/workbook.xml");
-            LoadWorkbookXml(sheetsEntry);
-
-            // Read "xl/_rels/workbook.xml.rels" to get sheet paths
-            ZipArchiveEntry sheetPathsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/_rels/workbook.xml.rels");
-            LoadWorkbookXmlRels(sheetPathsEntry);
-
-            // Read "xl/sharedStrings.xml" to get shared strings
-            ZipArchiveEntry sharedStringsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/sharedStrings.xml");
-            LoadSharedStrings(sharedStringsEntry);
-
-            // Read "xl/styles.xml" to get number formats
-            ZipArchiveEntry stylesEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/styles.xml");
-            LoadStyles(stylesEntry);
-
-            // Optionally load all sheets
-            if (Options.LoadSheets)
-            {
-                foreach (Sheet sheet in sheets)
-                {
-                    sheet.Open();
-                }
-            }
+            foreach (var sheet in sheets)
+                sheet.Open();
         }
     }
 
     private void LoadWorkbookXml(ZipArchiveEntry entry)
     {
-        XDocument document = XDocument.Load(entry.Open());
-        XElement root = document.Root;
+        var document = XDocument.Load(entry.Open());
+        var root = document.Root;
         XNamespace ns = NS_MAIN;
         XNamespace r = NS_OR;
 
-        XElement workbookPr = root.Element(ns + "workbookPr");
-        XAttribute date1904 = workbookPr.Attribute("date1904");
-        if (date1904 != null && date1904.Value == "1")
-        {
+        var workbookPr = root.Element(ns + "workbookPr");
+        if (workbookPr.Attribute("date1904") is { Value: "1" })
             BaseYear = 1904;
-        }
 
-        foreach (XElement element in root.Element(ns + "sheets").Elements())
+        foreach (var element in root.Element(ns + "sheets").Elements())
         {
-            XAttribute id = element.Attribute(r + "id");
-            XAttribute name = element.Attribute("name");
-            XAttribute state = element.Attribute("state");
+            var id = element.Attribute(r + "id");
+            var name = element.Attribute("name");
+            bool hidden = element.Attribute("state") is { Value: "hidden" };
 
-            bool hidden = false;
-            if (state != null && state.Value == "hidden")
-            {
-                hidden = true;
-            }
-
-            Sheet sheet = new Sheet(name.Value, id.Value, hidden);
-            sheet.Workbook = this;
+            var sheet = new Sheet(name.Value, id.Value, hidden) { Workbook = this };
             sheets.Add(sheet);
         }
     }
 
     private void LoadWorkbookXmlRels(ZipArchiveEntry entry)
     {
-        XDocument document = XDocument.Load(entry.Open());
-        XElement root = document.Root;
+        var document = XDocument.Load(entry.Open());
+        var root = document.Root;
         XNamespace ns = NS_PR;
 
-        foreach (XElement element in root.Elements(ns + "Relationship"))
+        foreach (var element in root.Elements(ns + "Relationship"))
         {
-            XAttribute id = element.Attribute("Id");
-            XAttribute type = element.Attribute("Type");
-            XAttribute target = element.Attribute("Target");
-
+            var type = element.Attribute("Type");
             if (type.Value != NS_ORW)
-            {
                 continue;
-            }
 
-            Sheet sheet = (from s in this.sheets
-                           where s.Id == id.Value
-                           select s).FirstOrDefault();
+            var id = element.Attribute("Id");
+            var target = element.Attribute("Target");
+            var sheet = sheets.FirstOrDefault(s => s.Id == id.Value);
 
             // Get sheet file path
-            Match match = Regex.Match(target.Value, @"worksheets/(.+)");
-            string path = @"xl/worksheets/" + match.Groups[1].Value;
-            sheet.Path = path.ToLower();
+            var match = Regex.Match(target.Value, @"worksheets/(.+)");
+            sheet.Path = $"xl/worksheets/{match.Groups[1].Value}".ToLower();
         }
     }
 
     private void LoadSharedStrings(ZipArchiveEntry entry)
     {
         // The xl/sharedStrings.xml file will be missing if there are no strings
-        if (entry == null)
-        {
+        if (entry is null)
             return;
-        }
 
-        XDocument document = XDocument.Load(entry.Open());
-        XElement root = document.Root;
+        var document = XDocument.Load(entry.Open());
+        var root = document.Root;
         XNamespace ns = NS_MAIN;
         int count = 0;
 
-        foreach (XElement si in root.Elements(ns + "si"))
+        foreach (var si in root.Elements(ns + "si"))
         {
-            IEnumerable<XElement> ts = si.Descendants(ns + "t");
-            string sum = string.Empty;
-            foreach (XElement t in ts)
-            {
-                sum += t.Value;
-            }
-
-            SharedStrings.Add(count, sum);
-            count++;
+            string sum = string.Concat(si.Descendants(ns + "t").Select(t => t.Value));
+            SharedStrings.Add(count++, sum);
         }
     }
 
     private void LoadStyles(ZipArchiveEntry entry)
     {
-        XDocument document = XDocument.Load(entry.Open());
+        var document = XDocument.Load(entry.Open());
         XNamespace ns = NS_MAIN;
-        XElement cellXfs = document.Root.Element(ns + "cellXfs");
+        var cellXfs = document.Root.Element(ns + "cellXfs");
         int index = 0;
 
-        foreach (XElement element in cellXfs.Elements())
+        foreach (var element in cellXfs.Elements())
         {
-            XAttribute numFmtId = element.Attribute("numFmtId");
-            if (numFmtId != null)
+            if (element.Attribute("numFmtId") is { } numFmtId)
             {
                 int numberFormatId = int.Parse(numFmtId.Value);
-                switch (numberFormatId)
+                NumberFormats.Add(index++, numberFormatId switch
                 {
-                    case 0:
-                        NumberFormats.Add(index, NumberFormat.General);
-                        break;
-                    case 2:
-                        NumberFormats.Add(index, NumberFormat.Number);
-                        break;
-                    case 164:
-                        NumberFormats.Add(index, NumberFormat.Currency);
-                        break;
-                    case 44:
-                        NumberFormats.Add(index, NumberFormat.Accounting);
-                        break;
-                    case 14:
-                        NumberFormats.Add(index, NumberFormat.Date);
-                        break;
-                    case 165:
-                        NumberFormats.Add(index, NumberFormat.Time);
-                        break;
-                    case 49:
-                        NumberFormats.Add(index, NumberFormat.Text);
-                        break;
-                    case 10:
-                        NumberFormats.Add(index, NumberFormat.Percentage);
-                        break;
-                    case 13:
-                        NumberFormats.Add(index, NumberFormat.Fraction);
-                        break;
-                    case 166:
-                        NumberFormats.Add(index, NumberFormat.Custom);
-                        break;
-                    case 11:
-                        NumberFormats.Add(index, NumberFormat.Scientific);
-                        break;
-                    default:
-                        NumberFormats.Add(index, NumberFormat.Unsupported);
-                        break;
-                }
-                index++;
+                    0 => NumberFormat.General,
+                    2 => NumberFormat.Number,
+                    164 => NumberFormat.Currency,
+                    44 => NumberFormat.Accounting,
+                    14 => NumberFormat.Date,
+                    165 => NumberFormat.Time,
+                    49 => NumberFormat.Text,
+                    10 => NumberFormat.Percentage,
+                    13 => NumberFormat.Fraction,
+                    166 => NumberFormat.Custom,
+                    11 => NumberFormat.Scientific,
+                    _ => NumberFormat.Unsupported
+                });
             }
         }
     }
 
-    public IEnumerable<Sheet> Sheets
-    {
-        get
-        {
-            if (Options.IncludeHidden)
-            {
-                return sheets.OrderBy(s => s.Id);
-            }
-            else
-            {
-                return sheets.Where(s => s.Hidden == false).OrderBy(s => s.Id);
-            }
-        }
-    }
+    public IEnumerable<Sheet> Sheets =>
+        Options.IncludeHidden
+            ? sheets.OrderBy(s => s.Id)
+            : sheets.Where(s => !s.Hidden).OrderBy(s => s.Id);
 
     public Sheet Sheet(string name) => sheets.SingleOrDefault(s => s.Name == name);
 }

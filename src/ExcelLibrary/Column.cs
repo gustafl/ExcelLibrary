@@ -3,63 +3,30 @@ using System.Linq;
 
 namespace ExcelLibrary;
 
-public class Column
+public class Column(int index, bool hidden = false)
 {
     private readonly List<Cell> cells = [];
 
-    public Column(int index)
-    {
-        Index = index;
-        Hidden = false;
-    }
-
-    public Column(int index, bool hidden)
-    {
-        Index = index;
-        Hidden = hidden;
-    }
-
-    public int Index { get; set; }
-    public bool Hidden { get; set; }
+    public int Index { get; set; } = index;
+    public bool Hidden { get; set; } = hidden;
     public Sheet Sheet { get; set; }
 
-    public IEnumerable<Cell> Cells
-    {
-        get
-        {
-            if (this.Sheet.Workbook.Options.IncludeHidden)
-            {
-                return this.cells.OrderBy(c => c.Row.Index);
-            }
-            else
-            {
-                return this.cells.Where(c => c.Row.Hidden == false).OrderBy(c => c.Row.Index);
-            }
-        }
-    }
+    public IEnumerable<Cell> Cells =>
+        Sheet.Workbook.Options.IncludeHidden
+            ? cells.OrderBy(c => c.Row.Index)
+            : cells.Where(c => !c.Row.Hidden).OrderBy(c => c.Row.Index);
 
     public void AddCell(Cell cell)
     {
-        Cell match = (from c in this.cells
-                      where c.Row.Index == cell.Row.Index
-                      select c).SingleOrDefault();
-
-        if (match == null)
+        if (cells.SingleOrDefault(c => c.Row.Index == cell.Row.Index) is null)
         {
             cell.Column = this;
-            this.cells.Add(cell);
+            cells.Add(cell);
         }
     }
 
-    public Cell Cell(int index)
-    {
-        if (this.Sheet.Workbook.Options.IncludeHidden)
-        {
-            return this.cells.SingleOrDefault(c => c.Row.Index == index);
-        }
-        else
-        {
-            return this.cells.SingleOrDefault(c => c.Row.Index == index && c.Row.Hidden == false);
-        }
-    }
+    public Cell Cell(int index) =>
+        Sheet.Workbook.Options.IncludeHidden
+            ? cells.SingleOrDefault(c => c.Row.Index == index)
+            : cells.SingleOrDefault(c => c.Row.Index == index && !c.Row.Hidden);
 }

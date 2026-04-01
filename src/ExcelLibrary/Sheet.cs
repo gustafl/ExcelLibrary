@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Linq;
@@ -7,7 +6,7 @@ using System.Xml.Linq;
 
 namespace ExcelLibrary;
 
-public class Sheet
+public class Sheet(string name, string id = null, bool hidden = false)
 {
     private const string NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
 
@@ -15,20 +14,8 @@ public class Sheet
     private readonly List<Row> rows = [];
     private readonly List<Column> columns = [];
 
-    public Sheet(string name)
-    {
-        Name = name;
-    }
-
-    public Sheet(string name, string id, bool hidden)
-    {
-        Name = name;
-        Id = id;
-        Hidden = hidden;
-    }
-
-    public string Name { get; set; }
-    public string Id { get; set; }
+    public string Name { get; set; } = name;
+    public string Id { get; set; } = id;
 
     public string Path
     {
@@ -36,222 +23,124 @@ public class Sheet
         set => path = value;
     }
 
-    public bool Hidden { get; set; }
+    public bool Hidden { get; set; } = hidden;
     public Workbook Workbook { get; set; }
 
-    public Row Row(int index)
-    {
-        if (Workbook.Options.IncludeHidden)
-        {
-            return this.rows.SingleOrDefault(r => r.Index == index);
-        }
-        else
-        {
-            return this.rows.SingleOrDefault(r => r.Index == index && r.Hidden == false);
-        }
-    }
+    public Row Row(int index) =>
+        Workbook.Options.IncludeHidden
+            ? rows.SingleOrDefault(r => r.Index == index)
+            : rows.SingleOrDefault(r => r.Index == index && !r.Hidden);
 
-    public Column Column(int index)
-    {
-        if (Workbook.Options.IncludeHidden)
-        {
-            return this.columns.SingleOrDefault(c => c.Index == index);
-        }
-        else
-        {
-            return this.columns.SingleOrDefault(c => c.Index == index && c.Hidden == false);
-        }
-    }
+    public Column Column(int index) =>
+        Workbook.Options.IncludeHidden
+            ? columns.SingleOrDefault(c => c.Index == index)
+            : columns.SingleOrDefault(c => c.Index == index && !c.Hidden);
 
-    public Cell Cell(int rowIndex, int columnIndex)
-    {
-        IEnumerable<Cell> cells = this.rows.SelectMany(r => r.Cells);
-        Cell cell = FindCell(cells, rowIndex, columnIndex);
-
-        return cell;
-    }
+    public Cell Cell(int rowIndex, int columnIndex) =>
+        FindCell(rows.SelectMany(r => r.Cells), rowIndex, columnIndex);
 
     public Cell Cell(string name)
     {
-        Match match = Regex.Match(name, @"([A-Z]+)(\d+)");
-        string letters = match.Groups[1].Value;
-        string numbers = match.Groups[2].Value;
-        int columnIndex = GetColumnIndex(letters);
-        int rowIndex = int.Parse(numbers);
-
-        IEnumerable<Cell> cells = this.rows.SelectMany(r => r.Cells);
-        Cell cell = FindCell(cells, rowIndex, columnIndex);
-
-        return cell;
+        var match = Regex.Match(name, @"([A-Z]+)(\d+)");
+        int columnIndex = GetColumnIndex(match.Groups[1].Value);
+        int rowIndex = int.Parse(match.Groups[2].Value);
+        return FindCell(rows.SelectMany(r => r.Cells), rowIndex, columnIndex);
     }
 
-    private Cell FindCell(IEnumerable<Cell> cells, int rowIndex, int columnIndex)
-    {
-        if (Workbook.Options.IncludeHidden)
-        {
-            Cell cell = (from c in cells
-                         where c.Row.Index == rowIndex &&
-                               c.Column.Index == columnIndex
-                         select c).SingleOrDefault();
+    private Cell FindCell(IEnumerable<Cell> cells, int rowIndex, int columnIndex) =>
+        Workbook.Options.IncludeHidden
+            ? cells.SingleOrDefault(c => c.Row.Index == rowIndex && c.Column.Index == columnIndex)
+            : cells.SingleOrDefault(c => c.Row.Index == rowIndex && !c.Row.Hidden &&
+                                         c.Column.Index == columnIndex && !c.Column.Hidden);
 
-            return cell;
-        }
-        else
-        {
-            Cell cell = (from c in cells
-                         where c.Row.Index == rowIndex &&
-                               c.Row.Hidden == false &&
-                               c.Column.Index == columnIndex &&
-                               c.Column.Hidden == false
-                         select c).SingleOrDefault();
+    public IEnumerable<Cell> Cells =>
+        Workbook.Options.IncludeHidden
+            ? rows.SelectMany(r => r.Cells)
+            : rows.Where(r => !r.Hidden).SelectMany(r => r.Cells);
 
-            return cell;
-        }
-    }
+    public IEnumerable<Row> Rows =>
+        Workbook.Options.IncludeHidden
+            ? rows.OrderBy(r => r.Index)
+            : rows.Where(r => !r.Hidden).OrderBy(r => r.Index);
 
-    public IEnumerable<Cell> Cells
-    {
-        get
-        {
-            if (Workbook.Options.IncludeHidden)
-            {
-                return this.rows.SelectMany(r => r.Cells);
-            }
-            else
-            {
-                return this.rows.Where(r => r.Hidden == false).SelectMany(r => r.Cells);
-            }
-        }
-    }
-
-    public IEnumerable<Row> Rows
-    {
-        get
-        {
-            if (Workbook.Options.IncludeHidden)
-            {
-                return this.rows.OrderBy(r => r.Index);
-            }
-            else
-            {
-                return this.rows.Where(r => r.Hidden == false).OrderBy(r => r.Index);
-            }
-        }
-    }
-
-    public IEnumerable<Column> Columns
-    {
-        get
-        {
-            if (Workbook.Options.IncludeHidden)
-            {
-                return this.columns.OrderBy(c => c.Index);
-            }
-            else
-            {
-                return this.columns.Where(c => c.Hidden == false).OrderBy(c => c.Index);
-            }
-        }
-    }
+    public IEnumerable<Column> Columns =>
+        Workbook.Options.IncludeHidden
+            ? columns.OrderBy(c => c.Index)
+            : columns.Where(c => !c.Hidden).OrderBy(c => c.Index);
 
     public void Open()
     {
-        using (ZipArchive archive = ZipFile.OpenRead(Workbook.File))
+        using var archive = ZipFile.OpenRead(Workbook.File);
+        var entry = archive.Entries.FirstOrDefault(e => e.FullName == Path.ToLower());
+        var document = XDocument.Load(entry.Open());
+        var root = document.Root;
+        XNamespace ns = NS_MAIN;
+
+        // Find hidden columns
+        var hiddenColumns = GetHiddenColumns(root, ns);
+
+        // Loop through rows
+        var sheetData = root.Element(ns + "sheetData");
+        foreach (var eRow in sheetData.Elements(ns + "row"))
         {
-            ZipArchiveEntry entry = archive.Entries.FirstOrDefault(e => e.FullName == this.Path.ToLower());
-            XDocument document = XDocument.Load(entry.Open());
-            XElement root = document.Root;
-            XNamespace ns = NS_MAIN;
+            // Skip empty rows
+            if (!eRow.Descendants(ns + "v").Any())
+                continue;
 
-            // Find hidden columns
-            List<int> hiddenColumns = GetHiddenColumns(root, ns);
+            // Set row properties
+            int index = int.Parse(eRow.Attribute("r").Value);
+            bool hidden = eRow.Attribute("hidden") is { Value: "1" };
+            var row = new Row(index, hidden);
 
-            // Loop throgh rows
-            XElement sheetData = root.Element(ns + "sheetData");
-            foreach (XElement eRow in sheetData.Elements(ns + "row"))
+            // Loop through cells on row
+            foreach (var eCell in eRow.Elements(ns + "c"))
             {
-                // Skip empty rows
-                if (eRow.Descendants(ns + "v").Count() == 0)
-                {
+                // Skip empty cells
+                var xValue = eCell.Element(ns + "v");
+                if (xValue is null)
                     continue;
-                }
 
-                // Set row properties
-                XAttribute attr1 = eRow.Attribute("r");
-                XAttribute attr2 = eRow.Attribute("hidden");
-                int index = int.Parse(attr1.Value);
-                bool hidden = (attr2 != null && attr2.Value == "1") ? true : false;
-                Row row = new Row(index, hidden);
+                // Get cell position
+                var match = Regex.Match(eCell.Attribute("r").Value, @"([A-Z]+)(\d+)");
+                int columnIndex = GetColumnIndex(match.Groups[1].Value);
+                int rowIndex = int.Parse(match.Groups[2].Value);
 
-                // Loop through cells on row
-                foreach (XElement eCell in eRow.Elements(ns + "c"))
+                // Get cell style
+                var format = NumberFormat.General;
+                if (eCell.Attribute("s") is { } s)
                 {
-                    // Skip empty cells
-                    XElement xValue = eCell.Element(ns + "v");
-                    if (xValue == null)
-                    {
-                        continue;
-                    }
-
-                    // Get cell position
-                    string position = eCell.Attribute("r").Value;
-                    Match match = Regex.Match(position, @"([A-Z]+)(\d+)");
-                    string letters = match.Groups[1].Value;
-                    string numbers = match.Groups[2].Value;
-                    int columnIndex = GetColumnIndex(letters);
-                    int rowIndex = int.Parse(numbers);
-
-                    // Get cell style
-                    XAttribute s = eCell.Attribute("s");
-                    NumberFormat format = NumberFormat.General;
-                    if (s != null)
-                    {
-                        int styleIndex = int.Parse(s.Value);
-                        format = (NumberFormat)Workbook.NumberFormats[styleIndex];
-                    }
-
-                    // Get shared string (if any)
-                    string sharedString = string.Empty;
-                    if (IsSharedString(eCell))
-                    {
-                        int number = int.Parse(xValue.Value);
-                        Workbook.SharedStrings.TryGetValue(number, out sharedString);
-                    }
-
-                    // Make column
-                    Column column = GetColumn(columnIndex);
-                    column.Hidden = (hiddenColumns.Contains(columnIndex)) ? true : false;
-
-                    // Make cell
-                    string cellValue = (string.IsNullOrEmpty(sharedString)) ? xValue.Value : sharedString;
-                    Cell cell = new Cell(cellValue);
-                    cell.Column = column;
-                    cell.Row = row;
-                    cell.Format = format;
-
-                    switch (format)
-                    {
-                        case NumberFormat.Date:
-                            cell.Value = Utilities.ConvertDate(cell.Value, Workbook.BaseYear);
-                            break;
-                        case NumberFormat.Time:
-                            cell.Value = Utilities.ConvertTime(cell.Value);
-                            break;
-                        default:
-                            break;
-                    }
-
-                    // Add cell to row and column
-                    row.AddCell(cell);
-                    column.AddCell(cell);
-
-                    // Add rows and column to sheet
-                    this.AddRow(row);
-                    this.AddColumn(column);
-
-                    /* NOTE: We add rows and columns multiple times here and
-                     * let the add methods filter out existing ones. */
+                    int styleIndex = int.Parse(s.Value);
+                    format = (NumberFormat)Workbook.NumberFormats[styleIndex];
                 }
+
+                // Get shared string (if any)
+                string sharedString = string.Empty;
+                if (IsSharedString(eCell))
+                {
+                    int number = int.Parse(xValue.Value);
+                    Workbook.SharedStrings.TryGetValue(number, out sharedString);
+                }
+
+                // Make column
+                var column = GetColumn(columnIndex);
+                column.Hidden = hiddenColumns.Contains(columnIndex);
+
+                // Make cell
+                string cellValue = string.IsNullOrEmpty(sharedString) ? xValue.Value : sharedString;
+                var cell = new Cell(cellValue) { Column = column, Row = row, Format = format };
+
+                if (format is NumberFormat.Date)
+                    cell.Value = Utilities.ConvertDate(cell.Value, Workbook.BaseYear);
+                else if (format is NumberFormat.Time)
+                    cell.Value = Utilities.ConvertTime(cell.Value);
+
+                // Add cell to row and column
+                row.AddCell(cell);
+                column.AddCell(cell);
+
+                // Add rows and column to sheet
+                AddRow(row);
+                AddColumn(column);
             }
         }
     }
@@ -264,28 +153,22 @@ public class Sheet
     private List<int> GetHiddenColumns(XElement root, XNamespace ns)
     {
         List<int> hiddenColumns = [];
-        XElement eCols = root.Element(ns + "cols");
+        var eCols = root.Element(ns + "cols");
 
-        if (eCols != null)
+        if (eCols is null)
+            return hiddenColumns;
+
+        foreach (var eCol in eCols.Elements(ns + "col"))
         {
-            foreach (XElement eCol in eCols.Elements(ns + "col"))
-            {
-                XAttribute aMin = eCol.Attribute("min");
-                XAttribute aMax = eCol.Attribute("max");
-                XAttribute aHidden = eCol.Attribute("hidden");
+            int min = eCol.Attribute("min") is { } aMin ? int.Parse(aMin.Value) : 0;
+            int max = eCol.Attribute("max") is { } aMax ? int.Parse(aMax.Value) : 0;
+            bool hidden = eCol.Attribute("hidden") is { Value: "1" };
 
-                int min = (aMin != null) ? int.Parse(aMin.Value) : 0;
-                int max = (aMax != null) ? int.Parse(aMax.Value) : 0;
-                bool hidden = (aHidden != null && aHidden.Value == "1") ? true : false;
-                
-                if (hidden == false)
-                    continue;
+            if (!hidden)
+                continue;
 
-                for (int i = min; i <= max; i++)
-                {
-                    hiddenColumns.Add(i);
-                }
-            }
+            for (int i = min; i <= max; i++)
+                hiddenColumns.Add(i);
         }
 
         return hiddenColumns;
@@ -306,27 +189,19 @@ public class Sheet
 
     public void AddRow(Row row)
     {
-        Row match = (from r in this.rows
-                     where r.Index == row.Index
-                     select r).SingleOrDefault();
-
-        if (match == null)
+        if (rows.SingleOrDefault(r => r.Index == row.Index) is null)
         {
             row.Sheet = this;
-            this.rows.Add(row);
+            rows.Add(row);
         }
     }
 
     public void AddColumn(Column column)
     {
-        Column match = (from c in this.columns
-                        where c.Index == column.Index
-                        select c).SingleOrDefault();
-
-        if (match == null)
+        if (columns.SingleOrDefault(c => c.Index == column.Index) is null)
         {
             column.Sheet = this;
-            this.columns.Add(column);
+            columns.Add(column);
         }
     }
 }
