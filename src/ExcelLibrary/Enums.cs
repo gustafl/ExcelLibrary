@@ -1,27 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace ExcelLibrary;
 
-namespace ExcelLibrary
+public enum NumberFormat
 {
-    public enum NumberFormat
-    {
-        General,
-        Number,
-        Currency,
-        Accounting,
-        Date,
-        Time,
-        Percentage,
-        Fraction,
-        Scientific,
-        Text,
-        Special,
-        Custom,
-        Unsupported
-    };
+    General,
+    Number,
+    Currency,
+    Accounting,
+    Date,
+    Time,
+    Percentage,
+    Fraction,
+    Scientific,
+    Text,
+    Special,
+    Custom,
+    Unsupported
+};
 
-    /* NOTE: The Unsupported number format is custom to this library. */
-}
+/* NOTE: The Unsupported number format is custom to this library. */

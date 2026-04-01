@@ -1,53 +1,51 @@
-﻿using System;
-using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Diagnostics;
 
-namespace ExcelLibrary.Tests
+namespace ExcelLibrary.Tests;
+
+[TestClass]
+public class LoadSheetsIsFalse
 {
-    [TestClass]
-    public class LoadSheetsIsFalse
+    private static readonly string FILE = Path.Combine(AppContext.BaseDirectory, "Input", "test1.xlsx");
+
+    private Workbook workbook = null;
+    private WorkbookOptions options = null;
+
+    [TestInitialize]
+    public void Initialize()
     {
-        private static readonly string FILE = Path.Combine(AppContext.BaseDirectory, "Input", "test1.xlsx");
+        options = new WorkbookOptions();
+        options.IncludeHidden = true;
+        options.LoadSheets = false;
+        this.workbook = new Workbook();
+        this.workbook.Open(FILE, options);
+    }
 
-        private Workbook workbook = null;
-        private WorkbookOptions options = null;
+    [TestMethod]
+    [TestCategory("Workbook")]
+    public void GetWorkbookOptionsLoadSheets()
+    {
+        Assert.AreEqual(false, this.options.LoadSheets);
+    }
 
-        [TestInitialize]
-        public void Initialize()
-        {
-            options = new WorkbookOptions();
-            options.IncludeHidden = true;
-            options.LoadSheets = false;
-            this.workbook = new Workbook();
-            this.workbook.Open(FILE, options);
-        }
+    [TestMethod]
+    [TestCategory("Sheet")]
+    public void OpenSheet()
+    {
+        Sheet sheet = this.workbook.Sheet("Sheet1");
+        sheet.Open();
+        Assert.IsInstanceOfType(sheet, typeof(Sheet));
+    }
 
-        [TestMethod]
-        [TestCategory("Workbook")]
-        public void GetWorkbookOptionsLoadSheets()
-        {
-            Assert.AreEqual(false, this.options.LoadSheets);
-        }
-
-        [TestMethod]
-        [TestCategory("Sheet")]
-        public void OpenSheet()
-        {
-            Sheet sheet = this.workbook.Sheet("Sheet1");
-            sheet.Open();
-            Assert.IsInstanceOfType(sheet, typeof(Sheet));
-        }
-
-        [TestMethod]
-        [TestCategory("Sheet")]
-        public void TryGetRowsBeforeCallingSheetOpen()
-        {
-            Sheet sheet = this.workbook.Sheet("Sheet1");
-            IEnumerable<Row> rows = sheet.Rows;
-            Assert.AreEqual(0, rows.Count());
-        }
+    [TestMethod]
+    [TestCategory("Sheet")]
+    public void TryGetRowsBeforeCallingSheetOpen()
+    {
+        Sheet sheet = this.workbook.Sheet("Sheet1");
+        IEnumerable<Row> rows = sheet.Rows;
+        Assert.AreEqual(0, rows.Count());
     }
 }
