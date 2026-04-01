@@ -1,10 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO.Compression;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
-
-namespace ExcelLibrary;
+﻿namespace ExcelLibrary;
 
 public class Workbook
 {

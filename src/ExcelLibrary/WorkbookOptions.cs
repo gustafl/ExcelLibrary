@@ -1,7 +1,7 @@
 ﻿namespace ExcelLibrary;
 
-public class WorkbookOptions
+public record WorkbookOptions
 {
-    public bool IncludeHidden { get; set; } = false;
-    public bool LoadSheets { get; set; } = true;
+    public bool IncludeHidden { get; init; }
+    public bool LoadSheets { get; init; } = true;
 }

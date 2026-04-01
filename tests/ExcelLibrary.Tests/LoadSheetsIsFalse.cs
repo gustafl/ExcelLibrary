@@ -1,51 +1,54 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
-namespace ExcelLibrary.Tests;
+﻿namespace ExcelLibrary.Tests;
 
 [TestClass]
 public class LoadSheetsIsFalse
 {
     private static readonly string FILE = Path.Combine(AppContext.BaseDirectory, "Input", "test1.xlsx");
 
-    private Workbook workbook = null;
-    private WorkbookOptions options = null;
+    private Workbook workbook = null!;
+    private WorkbookOptions options = null!;
 
     [TestInitialize]
     public void Initialize()
     {
-        options = new WorkbookOptions();
-        options.IncludeHidden = true;
-        options.LoadSheets = false;
-        this.workbook = new Workbook();
-        this.workbook.Open(FILE, options);
+        options = new WorkbookOptions { IncludeHidden = true, LoadSheets = false };
+        workbook = new();
+        workbook.Open(FILE, options);
     }
 
     [TestMethod]
     [TestCategory("Workbook")]
-    public void GetWorkbookOptionsLoadSheets()
+    public void Options_LoadSheets_IsFalse()
     {
-        Assert.AreEqual(false, this.options.LoadSheets);
+        // Assert
+        Assert.IsFalse(options.LoadSheets);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void OpenSheet()
+    public void Sheet_Open_ReturnsSheetInstance()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
         sheet.Open();
-        Assert.IsInstanceOfType(sheet, typeof(Sheet));
+
+        // Assert
+        Assert.IsInstanceOfType<Sheet>(sheet);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void TryGetRowsBeforeCallingSheetOpen()
+    public void Rows_BeforeSheetOpen_ReturnsEmptyCollection()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        IEnumerable<Row> rows = sheet.Rows;
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var rows = sheet.Rows;
+
+        // Assert
         Assert.AreEqual(0, rows.Count());
     }
 }

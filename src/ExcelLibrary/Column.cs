@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace ExcelLibrary;
+﻿namespace ExcelLibrary;
 
 public class Column(int index, bool hidden = false)
 {

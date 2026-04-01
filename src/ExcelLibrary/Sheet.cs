@@ -1,12 +1,6 @@
-using System.Collections.Generic;
-using System.IO.Compression;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
-
 namespace ExcelLibrary;
 
-public class Sheet(string name, string? id = null, bool hidden = false)
+public partial class Sheet(string name, string? id = null, bool hidden = false)
 {
     private const string NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
 
@@ -41,7 +35,7 @@ public class Sheet(string name, string? id = null, bool hidden = false)
 
     public Cell? Cell(string name)
     {
-        var match = Regex.Match(name, @"([A-Z]+)(\d+)");
+        var match = CellAddressRegex().Match(name);
         int columnIndex = GetColumnIndex(match.Groups[1].Value);
         int rowIndex = int.Parse(match.Groups[2].Value);
         return FindCell(rows.SelectMany(r => r.Cells), rowIndex, columnIndex);
@@ -107,7 +101,7 @@ public class Sheet(string name, string? id = null, bool hidden = false)
                     continue;
 
                 // Get cell position
-                var match = Regex.Match(eCell.Attribute("r")!.Value, @"([A-Z]+)(\d+)");
+                var match = CellAddressRegex().Match(eCell.Attribute("r")!.Value);
                 int columnIndex = GetColumnIndex(match.Groups[1].Value);
                 int rowIndex = int.Parse(match.Groups[2].Value);
 
@@ -180,7 +174,10 @@ public class Sheet(string name, string? id = null, bool hidden = false)
         return hiddenColumns;
     }
 
-    private int GetColumnIndex(string name)
+    [GeneratedRegex(@"([A-Z]+)(\d+)")]
+    private static partial Regex CellAddressRegex();
+
+    private static int GetColumnIndex(string name)
     {
         int number = 0;
         int pow = 1;

@@ -1,385 +1,573 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-
-namespace ExcelLibrary.Tests;
+﻿namespace ExcelLibrary.Tests;
 
 [TestClass]
 public class DefaultOptions
 {
     private static readonly string FILE = Path.Combine(AppContext.BaseDirectory, "Input", "test1.xlsx");
 
-    private Workbook workbook = null;
+    private const int ExpectedVisibleSheetCount = 3;
+    private const int ExpectedSharedStringCount = 35;
+    private const int ExpectedVisibleRowCount = 4;
+    private const int ExpectedVisibleColumnCount = 3;
+    private const int ExpectedVisibleCellCount = 4;
+
+    private Workbook workbook = null!;
 
     [TestInitialize]
     public void Initialize()
     {
-        this.workbook = new Workbook();
-        this.workbook.Open(FILE);
+        workbook = new();
+        workbook.Open(FILE);
     }
 
     [TestMethod]
     [TestCategory("Workbook")]
-    public void OpenWorkbook()
+    public void Open_WithDefaultOptions_ReturnsWorkbookInstance()
     {
-        Assert.IsInstanceOfType(this.workbook, typeof(Workbook));
+        // Assert
+        Assert.IsInstanceOfType<Workbook>(workbook);
     }
 
     [TestMethod]
     [TestCategory("Workbook")]
-    public void GetWorkbookFile()
+    public void File_AfterOpen_ReturnsFilePath()
     {
-        Assert.AreEqual(FILE, this.workbook.File);
-    }
-
-
-
-    [TestMethod]
-    [TestCategory("Workbook")]
-    public void GetSheets()
-    {
-        var sheets = this.workbook.Sheets;
-        Assert.AreEqual(3, sheets.Count());
+        // Assert
+        Assert.AreEqual(FILE, workbook.File);
     }
 
     [TestMethod]
     [TestCategory("Workbook")]
-    public void GetSharedStrings()
+    public void Sheets_WithDefaultOptions_ReturnsOnlyVisibleSheets()
     {
-        Assert.AreEqual(35, this.workbook.SharedStrings.Count);
+        // Act
+        var sheets = workbook.Sheets;
+
+        // Assert
+        Assert.AreEqual(ExpectedVisibleSheetCount, sheets.Count());
+    }
+
+    [TestMethod]
+    [TestCategory("Workbook")]
+    public void SharedStrings_AfterOpen_ReturnsExpectedCount()
+    {
+        // Assert
+        Assert.AreEqual(ExpectedSharedStringCount, workbook.SharedStrings.Count);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetSheetName()
+    public void Sheet_ByName_ReturnsCorrectName()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
+        // Act
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Assert
         Assert.AreEqual("Sheet1", sheet.Name);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetSheetId()
+    public void Sheet_ByName_ReturnsCorrectId()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
+        // Act
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Assert
         Assert.AreEqual("rId1", sheet.Id);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetSheetPath()
+    public void Sheet_ByName_ReturnsCorrectPath()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
+        // Act
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Assert
         Assert.AreEqual("xl/worksheets/sheet1.xml", sheet.Path.ToLower());
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetSheetHidden()
+    public void Sheet_WhenHidden_HiddenPropertyIsTrue()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet4");
-        Assert.AreEqual(true, sheet.Hidden);
+        // Act
+        var sheet = workbook.Sheet("Sheet4");
+
+        // Assert
+        Assert.IsTrue(sheet.Hidden);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetSheetWorkbook()
+    public void Sheet_Workbook_ReturnsSameInstance()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Assert.AreSame(this.workbook, sheet.Workbook);
+        // Act
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Assert
+        Assert.AreSame(workbook, sheet.Workbook);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetRows()
+    public void Rows_WithDefaultOptions_ReturnsOnlyVisibleRows()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
         var rows = sheet.Rows;
-        foreach (Row row in rows)
-            Debug.WriteLine("{0}", row.Index);
-        Assert.AreEqual(4, rows.Count());
+
+        // Assert
+        Assert.AreEqual(ExpectedVisibleRowCount, rows.Count());
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetColumns()
+    public void Columns_WithDefaultOptions_ReturnsOnlyVisibleColumns()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
         var columns = sheet.Columns;
-        foreach (Column column in columns)
-            Debug.WriteLine("{0}", column.Index);
-        Assert.AreEqual(3, columns.Count());
+
+        // Assert
+        Assert.AreEqual(ExpectedVisibleColumnCount, columns.Count());
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetRowByIndex()
+    public void Row_ByIndex_ReturnsCorrectCellValue()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Row row = sheet.Row(2);
-        string text = row.Cell(2).Value;
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var row = sheet.Row(2);
+
+        // Act
+        var text = row.Cell(2)?.Value;
+
+        // Assert
+        Assert.IsNotNull(row);
         Assert.AreEqual("Banana", text);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetColumnByIndex()
+    public void Column_ByIndex_ReturnsCorrectCellValue()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Column column = sheet.Column(2);
-        string text = column.Cell(2).Value;
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var column = sheet.Column(2);
+
+        // Act
+        var text = column.Cell(2)?.Value;
+
+        // Assert
+        Assert.IsNotNull(column);
         Assert.AreEqual("Banana", text);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetAllCells()
+    public void Cells_WithDefaultOptions_ReturnsOnlyVisibleCells()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        IEnumerable<Cell> cells = sheet.Cells;
-        Assert.AreEqual(4, cells.Count());
-    }
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
 
+        // Act
+        var cells = sheet.Cells;
+
+        // Assert
+        Assert.AreEqual(ExpectedVisibleCellCount, cells.Count());
+    }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetCellByRowAndColumn()
+    public void Cell_ByRowAndColumnIndex_ReturnsCorrectValue()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Cell cell = sheet.Cell(2, 2);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var cell = sheet.Cell(2, 2);
+
+        // Assert
+        Assert.IsNotNull(cell);
         Assert.AreEqual("Banana", cell.Value);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetCellByName()
+    public void Cell_ByName_ReturnsCorrectValue()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Cell cell = sheet.Cell("B2");
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var cell = sheet.Cell("B2");
+
+        // Assert
+        Assert.IsNotNull(cell);
         Assert.AreEqual("Banana", cell.Value);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void SameNumberOfCellsInRowsAndColumns()
+    public void Cells_InRowsAndColumns_HaveSameCount()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        int rowCellCount = sheet.Rows.SelectMany(r => r.Cells).Count();
-        int columnCellCount = sheet.Columns.SelectMany(c => c.Cells).Count();
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var rowCellCount = sheet.Rows.SelectMany(r => r.Cells).Count();
+        var columnCellCount = sheet.Columns.SelectMany(c => c.Cells).Count();
+
+        // Assert
         Assert.AreEqual(rowCellCount, columnCellCount);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void TryGetNonExistingRowByIndex()
+    public void Row_WhenNotExists_ReturnsNull()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Row row = sheet.Row(100);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var row = sheet.Row(100);
+
+        // Assert
         Assert.IsNull(row);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void TryGetNonExistingColumnByIndex()
+    public void Column_WhenNotExists_ReturnsNull()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Column column = sheet.Column(100);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var column = sheet.Column(100);
+
+        // Assert
         Assert.IsNull(column);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void TryGetHiddenRowWithIncludeHiddenFalse()
+    public void Row_WhenHiddenAndIncludeHiddenFalse_ReturnsNull()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Row row = sheet.Row(8);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var row = sheet.Row(8);
+
+        // Assert
         Assert.IsNull(row);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void TryGetHiddenColumnWithIncludeHiddenFalse()
+    public void Column_WhenHiddenAndIncludeHiddenFalse_ReturnsNull()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Column column = sheet.Column(5);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var column = sheet.Column(5);
+
+        // Assert
         Assert.IsNull(column);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void TryGetCellsOnEmptySheet()
+    public void Cells_OnEmptySheet_ReturnsEmptyCollection()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet3");
-        IEnumerable<Cell> cells = sheet.Cells;
+        // Arrange
+        var sheet = workbook.Sheet("Sheet3");
+
+        // Act
+        var cells = sheet.Cells;
+
+        // Assert
         Assert.AreEqual(0, cells.Count());
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void TryGetNonExistingCellByRowIndexAndColumnIndex()
+    public void Cell_WhenNotExistsByIndex_ReturnsNull()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Cell cell = sheet.Cell(100, 100);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var cell = sheet.Cell(100, 100);
+
+        // Assert
         Assert.IsNull(cell);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void TryGetNonExistingCellByName()
+    public void Cell_WhenNotExistsByName_ReturnsNull()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Cell cell = sheet.Cell("A100");
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var cell = sheet.Cell("A100");
+
+        // Assert
         Assert.IsNull(cell);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void TryGetCellInHiddenRow()
+    public void Cell_InHiddenRow_ReturnsNull()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Cell cell = sheet.Cell(8, 3);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var cell = sheet.Cell(8, 3);
+
+        // Assert
         Assert.IsNull(cell);
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void TryGetCellInHiddenColumn()
+    public void Cell_InHiddenColumn_ReturnsNull()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Cell cell = sheet.Cell(2, 5);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var cell = sheet.Cell(2, 5);
+
+        // Assert
         Assert.IsNull(cell);
     }
 
     [TestMethod]
     [TestCategory("Row")]
-    public void GetRowIndex()
+    public void Row_Index_ReturnsCorrectValue()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Row row = sheet.Row(2);
-        Assert.AreEqual(2, row.Index);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var row = sheet.Row(2);
+
+        // Act
+        var index = row.Index;
+
+        // Assert
+        Assert.IsNotNull(row);
+        Assert.AreEqual(2, index);
     }
 
     [TestMethod]
     [TestCategory("Row")]
-    public void GetRowSheet()
+    public void Row_Sheet_ReturnsSameInstance()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Row row = sheet.Row(2);
-        Assert.AreSame(sheet, row.Sheet);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var row = sheet.Row(2);
+
+        // Act
+        var rowSheet = row.Sheet;
+
+        // Assert
+        Assert.IsNotNull(row);
+        Assert.AreSame(sheet, rowSheet);
     }
 
     [TestMethod]
     [TestCategory("Row")]
-    public void GetCellsInRow()
+    public void Row_Cells_ReturnsCorrectCount()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Row row = sheet.Row(2);
-        int cellCount = row.Cells.Count();
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var row = sheet.Row(2);
+
+        // Act
+        var cellCount = row.Cells.Count();
+
+        // Assert
+        Assert.IsNotNull(row);
         Assert.AreEqual(1, cellCount);
     }
 
     [TestMethod]
     [TestCategory("Row")]
-    public void GetCellByColumn()
+    public void Row_CellByColumnIndex_ReturnsCorrectValue()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Row row = sheet.Row(2);
-        Cell cell = row.Cell(2);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var row = sheet.Row(2);
+
+        // Act
+        var cell = row.Cell(2);
+
+        // Assert
+        Assert.IsNotNull(row);
+        Assert.IsNotNull(cell);
         Assert.AreEqual("Banana", cell.Value);
     }
 
     [TestMethod]
     [TestCategory("Row")]
-    public void TryGetRowCellInHiddenColumn()
+    public void Row_CellInHiddenColumn_ReturnsNull()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Row row = sheet.Row(2);
-        Cell cell = row.Cell(5);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var row = sheet.Row(2);
+
+        // Act
+        var cell = row.Cell(5);
+
+        // Assert
+        Assert.IsNotNull(row);
         Assert.IsNull(cell);
     }
 
     [TestMethod]
     [TestCategory("Column")]
-    public void GetColumnIndex()
+    public void Column_Index_ReturnsCorrectValue()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Column column = sheet.Column(2);
-        Assert.AreEqual(2, column.Index);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var column = sheet.Column(2);
+
+        // Act
+        var index = column.Index;
+
+        // Assert
+        Assert.IsNotNull(column);
+        Assert.AreEqual(2, index);
     }
 
     [TestMethod]
     [TestCategory("Column")]
-    public void GetColumnSheet()
+    public void Column_Sheet_ReturnsSameInstance()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Column column = sheet.Column(2);
-        Assert.AreSame(sheet, column.Sheet);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var column = sheet.Column(2);
+
+        // Act
+        var columnSheet = column.Sheet;
+
+        // Assert
+        Assert.IsNotNull(column);
+        Assert.AreSame(sheet, columnSheet);
     }
 
     [TestMethod]
     [TestCategory("Column")]
-    public void GetCellsInColumn()
+    public void Column_Cells_ReturnsCorrectCount()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Column column = sheet.Column(3);
-        int cellCount = column.Cells.Count();
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var column = sheet.Column(3);
+
+        // Act
+        var cellCount = column.Cells.Count();
+
+        // Assert
+        Assert.IsNotNull(column);
         Assert.AreEqual(1, cellCount);
     }
 
     [TestMethod]
     [TestCategory("Column")]
-    public void GetCellByRow()
+    public void Column_CellByRowIndex_ReturnsCorrectValue()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Column column = sheet.Column(2);
-        Cell cell = column.Cell(2);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var column = sheet.Column(2);
+
+        // Act
+        var cell = column.Cell(2);
+
+        // Assert
+        Assert.IsNotNull(column);
+        Assert.IsNotNull(cell);
         Assert.AreEqual("Banana", cell.Value);
     }
 
     [TestMethod]
     [TestCategory("Column")]
-    public void TryGetColumnCellInHiddenRow()
+    public void Column_CellInHiddenRow_ReturnsNull()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Column column = sheet.Column(3);
-        Cell cell = column.Cell(8);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var column = sheet.Column(3);
+
+        // Act
+        var cell = column.Cell(8);
+
+        // Assert
+        Assert.IsNotNull(column);
         Assert.IsNull(cell);
     }
 
     [TestMethod]
     [TestCategory("Cell")]
-    public void GetCellValue()
+    public void Cell_Value_ReturnsCorrectValue()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Row row = sheet.Row(2);
-        Cell cell = row.Cell(2);
-        Assert.AreEqual("Banana", cell.Value);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var row = sheet.Row(2);
+        var cell = row.Cell(2);
+
+        // Act
+        var value = cell.Value;
+
+        // Assert
+        Assert.IsNotNull(row);
+        Assert.IsNotNull(cell);
+        Assert.AreEqual("Banana", value);
     }
 
     [TestMethod]
     [TestCategory("Cell")]
-    public void GetCellRow()
+    public void Cell_Row_ReturnsSameInstance()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Row row = sheet.Row(2);
-        Cell cell = row.Cell(2);
-        Assert.AreSame(row, cell.Row);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var row = sheet.Row(2);
+        var cell = row.Cell(2);
+
+        // Act
+        var cellRow = cell.Row;
+
+        // Assert
+        Assert.IsNotNull(row);
+        Assert.IsNotNull(cell);
+        Assert.AreSame(row, cellRow);
     }
 
     [TestMethod]
     [TestCategory("Cell")]
-    public void GetCellColumn()
+    public void Cell_Column_ReturnsSameInstance()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Column column = sheet.Column(2);
-        Cell cell = column.Cell(2);
-        Assert.AreSame(column, cell.Column);
-    }
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var column = sheet.Column(2);
+        var cell = column.Cell(2);
 
-    // TODO: GetCellFormat()
-    // TODO: GetCellValueFromSharedStrings()
-    // TODO: GetCellValueFromInlineString()
+        // Act
+        var cellColumn = cell.Column;
+
+        // Assert
+        Assert.IsNotNull(cell);
+        Assert.IsNotNull(column);
+        Assert.AreSame(column, cellColumn);
+    }
 }

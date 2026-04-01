@@ -1,64 +1,42 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.IO;
-
-namespace ExcelLibrary.Tests;
+﻿namespace ExcelLibrary.Tests;
 
 [TestClass]
 public class NumberFormats
 {
     private static readonly string FILE = Path.Combine(AppContext.BaseDirectory, "Input", "test2.xlsx");
 
-    private Workbook workbook = null;
-    private Sheet sheet = null;
-    private Column column = null;
+    private const decimal ExpectedValue = 123.45m;
+
+    private Workbook workbook = null!;
+    private Sheet sheet = null!;
+    private Column column = null!;
 
     [TestInitialize]
     public void Initialize()
     {
-        this.workbook = new Workbook();
-        this.workbook.Open(FILE);
-        this.sheet = this.workbook.Sheet("Sheet1");
-        this.column = sheet.Column(2);
+        workbook = new();
+        workbook.Open(FILE);
+        sheet = workbook.Sheet("Sheet1");
+        column = sheet.Column(2);
     }
 
     [TestMethod]
     [TestCategory("NumberFormats")]
-    public void General()
+    [DataRow(1, DisplayName = "General format")]
+    [DataRow(2, DisplayName = "Number format")]
+    [DataRow(3, DisplayName = "Currency format")]
+    [DataRow(4, DisplayName = "Accounting format")]
+    public void Cell_WithNumberFormat_ReturnsCorrectValue(int rowIndex)
     {
-        Cell cell = this.column.Cell(1);
-        string val = cell.Value.Replace(".", ",");
-        decimal number = decimal.Parse(val);
-        Assert.AreEqual(123.45m, number);
-    }
+        // Arrange
+        var cell = column.Cell(rowIndex);
 
-    [TestMethod]
-    [TestCategory("NumberFormats")]
-    public void Number()
-    {
-        Cell cell = this.column.Cell(2);
-        string val = cell.Value.Replace(".", ",");
-        decimal number = decimal.Parse(val);
-        Assert.AreEqual(123.45m, number);
-    }
+        // Act
+        var val = cell.Value.Replace(".", ",");
+        var number = decimal.Parse(val);
 
-    [TestMethod]
-    [TestCategory("NumberFormats")]
-    public void Currency()
-    {
-        Cell cell = this.column.Cell(3);
-        string val = cell.Value.Replace(".", ",");
-        decimal number = decimal.Parse(val);
-        Assert.AreEqual(123.45m, number);
-    }
-
-    [TestMethod]
-    [TestCategory("NumberFormats")]
-    public void Accounting()
-    {
-        Cell cell = this.column.Cell(4);
-        string val = cell.Value.Replace(".", ",");
-        decimal number = decimal.Parse(val);
-        Assert.AreEqual(123.45m, number);
+        // Assert
+        Assert.IsNotNull(cell);
+        Assert.AreEqual(ExpectedValue, number);
     }
 }

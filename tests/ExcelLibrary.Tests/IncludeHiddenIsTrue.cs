@@ -1,115 +1,146 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-
-namespace ExcelLibrary.Tests;
+﻿namespace ExcelLibrary.Tests;
 
 [TestClass]
 public class IncludeHiddenIsTrue
 {
     private static readonly string FILE = Path.Combine(AppContext.BaseDirectory, "Input", "test1.xlsx");
 
-    private Workbook workbook = null;
-    private WorkbookOptions options = null;
+    private const int ExpectedTotalSheetCount = 4;
+    private const int ExpectedTotalRowCount = 5;
+    private const int ExpectedTotalColumnCount = 4;
+    private const int ExpectedTotalCellCount = 6;
+
+    private Workbook workbook = null!;
+    private WorkbookOptions options = null!;
 
     [TestInitialize]
     public void Initialize()
     {
-        options = new WorkbookOptions();
-        options.IncludeHidden = true;
-        options.LoadSheets = true;
-        this.workbook = new Workbook();
-        this.workbook.Open(FILE, options);
+        options = new WorkbookOptions { IncludeHidden = true, LoadSheets = true };
+        workbook = new();
+        workbook.Open(FILE, options);
     }
 
     [TestMethod]
     [TestCategory("Workbook")]
-    public void GetWorkbookOptionsIncludeHidden()
+    public void Options_IncludeHidden_IsTrue()
     {
-        Assert.AreEqual(true, this.options.IncludeHidden);
+        // Assert
+        Assert.IsTrue(options.IncludeHidden);
     }
 
     [TestMethod]
     [TestCategory("Workbook")]
-    public void GetSheetsIncludingHidden()
+    public void Sheets_WithIncludeHiddenTrue_ReturnsAllSheets()
     {
-        var sheets = this.workbook.Sheets;
-        Assert.AreEqual(4, sheets.Count());
+        // Act
+        var sheets = workbook.Sheets;
+
+        // Assert
+        Assert.AreEqual(ExpectedTotalSheetCount, sheets.Count());
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetRowsIncludingHidden()
+    public void Rows_WithIncludeHiddenTrue_ReturnsAllRows()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
         var rows = sheet.Rows;
-        foreach (Row row in rows)
-        {
-            Debug.WriteLine("{0}", row.Index);
-        } 
-        Assert.AreEqual(5, rows.Count());
+
+        // Assert
+        Assert.AreEqual(ExpectedTotalRowCount, rows.Count());
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetColumnsIncludingHidden()
+    public void Columns_WithIncludeHiddenTrue_ReturnsAllColumns()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
         var columns = sheet.Columns;
-        foreach (Column column in columns)
-        {
-            Debug.WriteLine("{0}", column.Index);
-        }  
-        Assert.AreEqual(4, columns.Count());
+
+        // Assert
+        Assert.AreEqual(ExpectedTotalColumnCount, columns.Count());
     }
 
     [TestMethod]
     [TestCategory("Sheet")]
-    public void GetAllCellsIncludingHidden()
+    public void Cells_WithIncludeHiddenTrue_ReturnsAllCells()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        IEnumerable<Cell> cells = sheet.Cells;
-        Assert.AreEqual(6, cells.Count());
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var cells = sheet.Cells;
+
+        // Assert
+        Assert.AreEqual(ExpectedTotalCellCount, cells.Count());
     }
 
     [TestMethod]
     [TestCategory("Row")]
-    public void GetCellsInRowIncludingHidden()
+    public void Row_CellsWithIncludeHiddenTrue_ReturnsAllCells()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Row row = sheet.Row(2);
-        int cellCount = row.Cells.Count();
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var row = sheet.Row(2);
+        Assert.IsNotNull(row);
+
+        // Act
+        var cellCount = row.Cells.Count();
+
+        // Assert
         Assert.AreEqual(2, cellCount);
     }
 
     [TestMethod]
     [TestCategory("Row")]
-    public void GetRowHidden()
+    public void Row_WhenHidden_HiddenPropertyIsTrue()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Row row = sheet.Row(8);
-        Assert.AreEqual(true, row.Hidden);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var row = sheet.Row(8);
+
+        // Assert
+        Assert.IsNotNull(row);
+        Assert.IsTrue(row.Hidden);
     }
 
     [TestMethod]
     [TestCategory("Column")]
-    public void GetCellsInColumnIncludingHidden()
+    public void Column_CellsWithIncludeHiddenTrue_ReturnsAllCells()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Column column = sheet.Column(3);
-        int cellCount = column.Cells.Count();
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+        var column = sheet.Column(3);
+
+        // Act
+        var cellCount = column.Cells.Count();
+
+        // Assert
+        Assert.IsNotNull(column);
         Assert.AreEqual(2, cellCount);
     }
 
     [TestMethod]
     [TestCategory("Column")]
-    public void GetColumnHidden()
+    public void Column_WhenHidden_HiddenPropertyIsTrue()
     {
-        Sheet sheet = this.workbook.Sheet("Sheet1");
-        Column column = sheet.Column(5);
-        Assert.AreEqual(true, column.Hidden);
+        // Arrange
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Act
+        var column = sheet.Column(5);
+
+        // Assert
+        Assert.IsNotNull(column);
+        Assert.IsTrue(column.Hidden);
     }
 }
