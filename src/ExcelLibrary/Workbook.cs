@@ -13,29 +13,30 @@ public class Workbook
     private const string NS_OR = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     private const string NS_ORW = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet";
 
-    private string file;
-    private List<Sheet> sheets = new List<Sheet>();
-    private Dictionary<int, string> sharedStrings = new Dictionary<int, string>();
-    private Dictionary<int, NumberFormat> numberFormats = new Dictionary<int, NumberFormat>();
-    private WorkbookOptions options = new WorkbookOptions();
-    private int baseYear = 1900;
+    private readonly List<Sheet> sheets = new List<Sheet>();
+
+    public string File { get; private set; }
+    public Dictionary<int, string> SharedStrings { get; } = new Dictionary<int, string>();
+    public Dictionary<int, NumberFormat> NumberFormats { get; } = new Dictionary<int, NumberFormat>();
+    public WorkbookOptions Options { get; set; } = new WorkbookOptions();
+    public int BaseYear { get; private set; } = 1900;
 
     public void Open(string file)
     {
-        this.file = file;
+        File = file;
         Open();
     }
 
     public void Open(string file, WorkbookOptions options)
     {
-        this.file = file;
-        this.options = options;
+        File = file;
+        Options = options;
         Open();
     }
 
     private void Open()
     {
-        using (ZipArchive archive = ZipFile.OpenRead(file))
+        using (ZipArchive archive = ZipFile.OpenRead(File))
         {
             // Read "xl/workbook.xml" to get sheet names and ids
             ZipArchiveEntry sheetsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/workbook.xml");
@@ -54,9 +55,9 @@ public class Workbook
             LoadStyles(stylesEntry);
 
             // Optionally load all sheets
-            if (options.LoadSheets)
+            if (Options.LoadSheets)
             {
-                foreach (Sheet sheet in this.sheets)
+                foreach (Sheet sheet in sheets)
                 {
                     sheet.Open();
                 }
@@ -75,7 +76,7 @@ public class Workbook
         XAttribute date1904 = workbookPr.Attribute("date1904");
         if (date1904 != null && date1904.Value == "1")
         {
-            this.baseYear = 1904;
+            BaseYear = 1904;
         }
 
         foreach (XElement element in root.Element(ns + "sheets").Elements())
@@ -92,7 +93,7 @@ public class Workbook
 
             Sheet sheet = new Sheet(name.Value, id.Value, hidden);
             sheet.Workbook = this;
-            this.sheets.Add(sheet);
+            sheets.Add(sheet);
         }
     }
 
@@ -146,7 +147,7 @@ public class Workbook
                 sum += t.Value;
             }
 
-            this.sharedStrings.Add(count, sum);
+            SharedStrings.Add(count, sum);
             count++;
         }
     }
@@ -167,40 +168,40 @@ public class Workbook
                 switch (numberFormatId)
                 {
                     case 0:
-                        this.numberFormats.Add(index, NumberFormat.General);
+                        NumberFormats.Add(index, NumberFormat.General);
                         break;
                     case 2:
-                        this.numberFormats.Add(index, NumberFormat.Number);
+                        NumberFormats.Add(index, NumberFormat.Number);
                         break;
                     case 164:
-                        this.numberFormats.Add(index, NumberFormat.Currency);
+                        NumberFormats.Add(index, NumberFormat.Currency);
                         break;
                     case 44:
-                        this.numberFormats.Add(index, NumberFormat.Accounting);
+                        NumberFormats.Add(index, NumberFormat.Accounting);
                         break;
                     case 14:
-                        this.numberFormats.Add(index, NumberFormat.Date);
+                        NumberFormats.Add(index, NumberFormat.Date);
                         break;
                     case 165:
-                        this.numberFormats.Add(index, NumberFormat.Time);
+                        NumberFormats.Add(index, NumberFormat.Time);
                         break;
                     case 49:
-                        this.numberFormats.Add(index, NumberFormat.Text);
+                        NumberFormats.Add(index, NumberFormat.Text);
                         break;
                     case 10:
-                        this.numberFormats.Add(index, NumberFormat.Percentage);
+                        NumberFormats.Add(index, NumberFormat.Percentage);
                         break;
                     case 13:
-                        this.numberFormats.Add(index, NumberFormat.Fraction);
+                        NumberFormats.Add(index, NumberFormat.Fraction);
                         break;
                     case 166:
-                        this.numberFormats.Add(index, NumberFormat.Custom);
+                        NumberFormats.Add(index, NumberFormat.Custom);
                         break;
                     case 11:
-                        this.numberFormats.Add(index, NumberFormat.Scientific);
+                        NumberFormats.Add(index, NumberFormat.Scientific);
                         break;
                     default:
-                        this.numberFormats.Add(index, NumberFormat.Unsupported);
+                        NumberFormats.Add(index, NumberFormat.Unsupported);
                         break;
                 }
                 index++;
@@ -212,45 +213,19 @@ public class Workbook
     {
         get
         {
-            if (this.Options.IncludeHidden)
+            if (Options.IncludeHidden)
             {
-                return this.sheets.OrderBy(s => s.Id);
+                return sheets.OrderBy(s => s.Id);
             }
             else
             {
-                return this.sheets.Where(s => s.Hidden == false).OrderBy(s => s.Id);
+                return sheets.Where(s => s.Hidden == false).OrderBy(s => s.Id);
             }
         }
     }
 
     public Sheet Sheet(string name)
     {
-        return this.sheets.SingleOrDefault(s => s.Name == name);
-    }
-
-    public WorkbookOptions Options
-    {
-        get { return this.options; }
-        set { this.options = value; }
-    }
-
-    public string File
-    {
-        get { return this.file; }
-    }
-
-    public Dictionary<int, string> SharedStrings
-    {
-        get { return this.sharedStrings; }
-    }
-
-    public Dictionary<int, NumberFormat> NumberFormats
-    {
-        get { return this.numberFormats; }
-    }
-
-    public int BaseYear
-    {
-        get { return this.baseYear; }
+        return sheets.SingleOrDefault(s => s.Name == name);
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Linq;
@@ -11,59 +11,37 @@ public class Sheet
 {
     private const string NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
 
-    private string name;
-    private string id;
     private string path;
-    private bool hidden;
-    private Workbook workbook;
-    private List<Row> rows = new List<Row>();
-    private List<Column> columns = new List<Column>();
+    private readonly List<Row> rows = new List<Row>();
+    private readonly List<Column> columns = new List<Column>();
 
     public Sheet(string name)
     {
-        this.name = name;
+        Name = name;
     }
 
     public Sheet(string name, string id, bool hidden)
     {
-        this.name = name;
-        this.id = id;
-        this.hidden = hidden;
+        Name = name;
+        Id = id;
+        Hidden = hidden;
     }
 
-    public string Name
-    {
-        get { return this.name; }
-        set { this.name = value; }
-    }
-
-    public string Id
-    {
-        get { return this.id; }
-        set { this.id = value; }
-    }
+    public string Name { get; set; }
+    public string Id { get; set; }
 
     public string Path
     {
-        get { return this.path.ToLower(); }
-        set { this.path = value; }
+        get { return path.ToLower(); }
+        set { path = value; }
     }
 
-    public bool Hidden
-    {
-        get { return this.hidden; }
-        set { this.hidden = value; }
-    }
-
-    public Workbook Workbook
-    {
-        get { return this.workbook; }
-        set { this.workbook = value; }
-    }
+    public bool Hidden { get; set; }
+    public Workbook Workbook { get; set; }
 
     public Row Row(int index)
     {
-        if (this.workbook.Options.IncludeHidden)
+        if (Workbook.Options.IncludeHidden)
         {
             return this.rows.SingleOrDefault(r => r.Index == index);
         }
@@ -75,7 +53,7 @@ public class Sheet
 
     public Column Column(int index)
     {
-        if (this.workbook.Options.IncludeHidden)
+        if (Workbook.Options.IncludeHidden)
         {
             return this.columns.SingleOrDefault(c => c.Index == index);
         }
@@ -109,7 +87,7 @@ public class Sheet
 
     private Cell FindCell(IEnumerable<Cell> cells, int rowIndex, int columnIndex)
     {
-        if (this.workbook.Options.IncludeHidden)
+        if (Workbook.Options.IncludeHidden)
         {
             Cell cell = (from c in cells
                          where c.Row.Index == rowIndex &&
@@ -135,7 +113,7 @@ public class Sheet
     {
         get
         {
-            if (this.workbook.Options.IncludeHidden)
+            if (Workbook.Options.IncludeHidden)
             {
                 return this.rows.SelectMany(r => r.Cells);
             }
@@ -150,7 +128,7 @@ public class Sheet
     {
         get
         {
-            if (this.workbook.Options.IncludeHidden)
+            if (Workbook.Options.IncludeHidden)
             {
                 return this.rows.OrderBy(r => r.Index);
             }
@@ -165,7 +143,7 @@ public class Sheet
     {
         get
         {
-            if (this.workbook.Options.IncludeHidden)
+            if (Workbook.Options.IncludeHidden)
             {
                 return this.columns.OrderBy(c => c.Index);
             }
@@ -178,7 +156,7 @@ public class Sheet
 
     public void Open()
     {
-        using (ZipArchive archive = ZipFile.OpenRead(this.workbook.File))
+        using (ZipArchive archive = ZipFile.OpenRead(Workbook.File))
         {
             ZipArchiveEntry entry = archive.Entries.FirstOrDefault(e => e.FullName == this.Path.ToLower());
             XDocument document = XDocument.Load(entry.Open());
@@ -229,7 +207,7 @@ public class Sheet
                     if (s != null)
                     {
                         int styleIndex = int.Parse(s.Value);
-                        format = (NumberFormat)this.workbook.NumberFormats[styleIndex];
+                        format = (NumberFormat)Workbook.NumberFormats[styleIndex];
                     }
 
                     // Get shared string (if any)
@@ -237,7 +215,7 @@ public class Sheet
                     if (IsSharedString(eCell))
                     {
                         int number = int.Parse(xValue.Value);
-                        this.workbook.SharedStrings.TryGetValue(number, out sharedString);
+                        Workbook.SharedStrings.TryGetValue(number, out sharedString);
                     }
 
                     // Make column
@@ -254,7 +232,7 @@ public class Sheet
                     switch (format)
                     {
                         case NumberFormat.Date:
-                            cell.Value = Utilities.ConvertDate(cell.Value, this.workbook.BaseYear);
+                            cell.Value = Utilities.ConvertDate(cell.Value, Workbook.BaseYear);
                             break;
                         case NumberFormat.Time:
                             cell.Value = Utilities.ConvertTime(cell.Value);

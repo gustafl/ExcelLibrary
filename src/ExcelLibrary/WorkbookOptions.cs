@@ -2,18 +2,6 @@
 
 public class WorkbookOptions
 {
-    private bool includeHidden = false;
-    private bool loadSheets = true;
-
-    public bool IncludeHidden
-    {
-        get { return this.includeHidden; }
-        set { this.includeHidden = value; }
-    }
-
-    public bool LoadSheets
-    {
-        get { return this.loadSheets; }
-        set { this.loadSheets = value; }
-    }
+    public bool IncludeHidden { get; set; } = false;
+    public bool LoadSheets { get; set; } = true;
 }
