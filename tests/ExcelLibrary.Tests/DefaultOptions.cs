@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,7 @@ namespace ExcelLibrary.Tests
     [TestClass]
     public class DefaultOptions
     {
-        private const string FILE = @"..\..\..\Input\test1.xlsx";
+        private static readonly string FILE = Path.Combine(AppContext.BaseDirectory, "Input", "test1.xlsx");
 
         private Workbook workbook = null;
 
