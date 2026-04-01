@@ -9,7 +9,7 @@ public class Column(int index, bool hidden = false)
 
     public int Index { get; set; } = index;
     public bool Hidden { get; set; } = hidden;
-    public Sheet Sheet { get; set; }
+    public required Sheet Sheet { get; set; }
 
     public IEnumerable<Cell> Cells =>
         Sheet.Workbook.Options.IncludeHidden
@@ -25,7 +25,7 @@ public class Column(int index, bool hidden = false)
         }
     }
 
-    public Cell Cell(int index) =>
+    public Cell? Cell(int index) =>
         Sheet.Workbook.Options.IncludeHidden
             ? cells.SingleOrDefault(c => c.Row.Index == index)
             : cells.SingleOrDefault(c => c.Row.Index == index && !c.Row.Hidden);

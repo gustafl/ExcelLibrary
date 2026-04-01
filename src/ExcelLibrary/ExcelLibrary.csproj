@@ -5,7 +5,7 @@
     <RootNamespace>ExcelLibrary</RootNamespace>
     <AssemblyName>ExcelLibrary</AssemblyName>
     <ImplicitUsings>disable</ImplicitUsings>
-    <Nullable>disable</Nullable>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

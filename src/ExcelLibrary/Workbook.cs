@@ -15,7 +15,7 @@ public class Workbook
 
     private readonly List<Sheet> sheets = [];
 
-    public string File { get; private set; }
+    public string? File { get; private set; }
     public Dictionary<int, string> SharedStrings { get; } = [];
     public Dictionary<int, NumberFormat> NumberFormats { get; } = [];
     public WorkbookOptions Options { get; set; } = new();
@@ -36,23 +36,28 @@ public class Workbook
 
     private void Open()
     {
+        if (File is null) return;
         using var archive = ZipFile.OpenRead(File);
 
         // Read "xl/workbook.xml" to get sheet names and ids
         var sheetsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/workbook.xml");
-        LoadWorkbookXml(sheetsEntry);
+        if (sheetsEntry is not null)
+            LoadWorkbookXml(sheetsEntry);
 
         // Read "xl/_rels/workbook.xml.rels" to get sheet paths
         var sheetPathsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/_rels/workbook.xml.rels");
-        LoadWorkbookXmlRels(sheetPathsEntry);
+        if (sheetPathsEntry is not null)
+            LoadWorkbookXmlRels(sheetPathsEntry);
 
         // Read "xl/sharedStrings.xml" to get shared strings
         var sharedStringsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/sharedStrings.xml");
-        LoadSharedStrings(sharedStringsEntry);
+        if (sharedStringsEntry is not null)
+            LoadSharedStrings(sharedStringsEntry);
 
         // Read "xl/styles.xml" to get number formats
         var stylesEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/styles.xml");
-        LoadStyles(stylesEntry);
+        if (stylesEntry is not null)
+            LoadStyles(stylesEntry);
 
         // Optionally load all sheets
         if (Options.LoadSheets)
@@ -66,20 +71,26 @@ public class Workbook
     {
         var document = XDocument.Load(entry.Open());
         var root = document.Root;
+        if (root is null) return;
+
         XNamespace ns = NS_MAIN;
         XNamespace r = NS_OR;
 
         var workbookPr = root.Element(ns + "workbookPr");
-        if (workbookPr.Attribute("date1904") is { Value: "1" })
+        if (workbookPr?.Attribute("date1904") is { Value: "1" })
             BaseYear = 1904;
 
-        foreach (var element in root.Element(ns + "sheets").Elements())
-        {
-            var id = element.Attribute(r + "id");
-            var name = element.Attribute("name");
-            bool hidden = element.Attribute("state") is { Value: "hidden" };
+        var sheetsElement = root.Element(ns + "sheets");
+        if (sheetsElement is null) return;
 
-            var sheet = new Sheet(name.Value, id.Value, hidden) { Workbook = this };
+        foreach (var element in sheetsElement.Elements())
+        {
+            var id = element.Attribute(r + "id")?.Value;
+            var name = element.Attribute("name")?.Value;
+            if (name is null) continue;
+
+            bool hidden = element.Attribute("state") is { Value: "hidden" };
+            var sheet = new Sheet(name, id, hidden) { Workbook = this };
             sheets.Add(sheet);
         }
     }
@@ -88,32 +99,35 @@ public class Workbook
     {
         var document = XDocument.Load(entry.Open());
         var root = document.Root;
+        if (root is null) return;
+
         XNamespace ns = NS_PR;
 
         foreach (var element in root.Elements(ns + "Relationship"))
         {
             var type = element.Attribute("Type");
-            if (type.Value != NS_ORW)
+            if (type?.Value != NS_ORW)
                 continue;
 
-            var id = element.Attribute("Id");
-            var target = element.Attribute("Target");
-            var sheet = sheets.FirstOrDefault(s => s.Id == id.Value);
+            var id = element.Attribute("Id")?.Value;
+            var target = element.Attribute("Target")?.Value;
+            if (id is null || target is null) continue;
+
+            var sheet = sheets.FirstOrDefault(s => s.Id == id);
+            if (sheet is null) continue;
 
             // Get sheet file path
-            var match = Regex.Match(target.Value, @"worksheets/(.+)");
+            var match = Regex.Match(target, @"worksheets/(.+)");
             sheet.Path = $"xl/worksheets/{match.Groups[1].Value}".ToLower();
         }
     }
 
     private void LoadSharedStrings(ZipArchiveEntry entry)
     {
-        // The xl/sharedStrings.xml file will be missing if there are no strings
-        if (entry is null)
-            return;
-
         var document = XDocument.Load(entry.Open());
         var root = document.Root;
+        if (root is null) return;
+
         XNamespace ns = NS_MAIN;
         int count = 0;
 
@@ -128,7 +142,9 @@ public class Workbook
     {
         var document = XDocument.Load(entry.Open());
         XNamespace ns = NS_MAIN;
-        var cellXfs = document.Root.Element(ns + "cellXfs");
+        var cellXfs = document.Root?.Element(ns + "cellXfs");
+        if (cellXfs is null) return;
+
         int index = 0;
 
         foreach (var element in cellXfs.Elements())
@@ -160,5 +176,5 @@ public class Workbook
             ? sheets.OrderBy(s => s.Id)
             : sheets.Where(s => !s.Hidden).OrderBy(s => s.Id);
 
-    public Sheet Sheet(string name) => sheets.SingleOrDefault(s => s.Name == name);
+    public Sheet? Sheet(string name) => sheets.SingleOrDefault(s => s.Name == name);
 }

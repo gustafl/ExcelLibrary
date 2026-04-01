@@ -6,40 +6,40 @@ using System.Xml.Linq;
 
 namespace ExcelLibrary;
 
-public class Sheet(string name, string id = null, bool hidden = false)
+public class Sheet(string name, string? id = null, bool hidden = false)
 {
     private const string NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
 
-    private string path;
+    private string? path;
     private readonly List<Row> rows = [];
     private readonly List<Column> columns = [];
 
     public string Name { get; set; } = name;
-    public string Id { get; set; } = id;
+    public string? Id { get; set; } = id;
 
     public string Path
     {
-        get => path.ToLower();
+        get => path?.ToLower() ?? string.Empty;
         set => path = value;
     }
 
     public bool Hidden { get; set; } = hidden;
-    public Workbook Workbook { get; set; }
+    public required Workbook Workbook { get; set; }
 
-    public Row Row(int index) =>
+    public Row? Row(int index) =>
         Workbook.Options.IncludeHidden
             ? rows.SingleOrDefault(r => r.Index == index)
             : rows.SingleOrDefault(r => r.Index == index && !r.Hidden);
 
-    public Column Column(int index) =>
+    public Column? Column(int index) =>
         Workbook.Options.IncludeHidden
             ? columns.SingleOrDefault(c => c.Index == index)
             : columns.SingleOrDefault(c => c.Index == index && !c.Hidden);
 
-    public Cell Cell(int rowIndex, int columnIndex) =>
+    public Cell? Cell(int rowIndex, int columnIndex) =>
         FindCell(rows.SelectMany(r => r.Cells), rowIndex, columnIndex);
 
-    public Cell Cell(string name)
+    public Cell? Cell(string name)
     {
         var match = Regex.Match(name, @"([A-Z]+)(\d+)");
         int columnIndex = GetColumnIndex(match.Groups[1].Value);
@@ -47,7 +47,7 @@ public class Sheet(string name, string id = null, bool hidden = false)
         return FindCell(rows.SelectMany(r => r.Cells), rowIndex, columnIndex);
     }
 
-    private Cell FindCell(IEnumerable<Cell> cells, int rowIndex, int columnIndex) =>
+    private Cell? FindCell(IEnumerable<Cell> cells, int rowIndex, int columnIndex) =>
         Workbook.Options.IncludeHidden
             ? cells.SingleOrDefault(c => c.Row.Index == rowIndex && c.Column.Index == columnIndex)
             : cells.SingleOrDefault(c => c.Row.Index == rowIndex && !c.Row.Hidden &&
@@ -70,10 +70,14 @@ public class Sheet(string name, string id = null, bool hidden = false)
 
     public void Open()
     {
-        using var archive = ZipFile.OpenRead(Workbook.File);
+        using var archive = ZipFile.OpenRead(Workbook.File!);
         var entry = archive.Entries.FirstOrDefault(e => e.FullName == Path.ToLower());
+        if (entry is null) return;
+
         var document = XDocument.Load(entry.Open());
         var root = document.Root;
+        if (root is null) return;
+
         XNamespace ns = NS_MAIN;
 
         // Find hidden columns
@@ -81,6 +85,8 @@ public class Sheet(string name, string id = null, bool hidden = false)
 
         // Loop through rows
         var sheetData = root.Element(ns + "sheetData");
+        if (sheetData is null) return;
+
         foreach (var eRow in sheetData.Elements(ns + "row"))
         {
             // Skip empty rows
@@ -88,9 +94,9 @@ public class Sheet(string name, string id = null, bool hidden = false)
                 continue;
 
             // Set row properties
-            int index = int.Parse(eRow.Attribute("r").Value);
+            int index = int.Parse(eRow.Attribute("r")!.Value);
             bool hidden = eRow.Attribute("hidden") is { Value: "1" };
-            var row = new Row(index, hidden);
+            var row = new Row(index, hidden) { Sheet = this };
 
             // Loop through cells on row
             foreach (var eCell in eRow.Elements(ns + "c"))
@@ -101,7 +107,7 @@ public class Sheet(string name, string id = null, bool hidden = false)
                     continue;
 
                 // Get cell position
-                var match = Regex.Match(eCell.Attribute("r").Value, @"([A-Z]+)(\d+)");
+                var match = Regex.Match(eCell.Attribute("r")!.Value, @"([A-Z]+)(\d+)");
                 int columnIndex = GetColumnIndex(match.Groups[1].Value);
                 int rowIndex = int.Parse(match.Groups[2].Value);
 
@@ -114,7 +120,7 @@ public class Sheet(string name, string id = null, bool hidden = false)
                 }
 
                 // Get shared string (if any)
-                string sharedString = string.Empty;
+                string? sharedString = null;
                 if (IsSharedString(eCell))
                 {
                     int number = int.Parse(xValue.Value);
@@ -126,7 +132,7 @@ public class Sheet(string name, string id = null, bool hidden = false)
                 column.Hidden = hiddenColumns.Contains(columnIndex);
 
                 // Make cell
-                string cellValue = string.IsNullOrEmpty(sharedString) ? xValue.Value : sharedString;
+                string cellValue = sharedString ?? xValue.Value;
                 var cell = new Cell(cellValue) { Column = column, Row = row, Format = format };
 
                 if (format is NumberFormat.Date)
@@ -148,7 +154,7 @@ public class Sheet(string name, string id = null, bool hidden = false)
     private bool IsSharedString(XElement cell) => cell.Attribute("t") is { Value: "s" };
 
     private Column GetColumn(int columnIndex) =>
-        columns.SingleOrDefault(c => c.Index == columnIndex) ?? new Column(columnIndex);
+        columns.SingleOrDefault(c => c.Index == columnIndex) ?? new Column(columnIndex) { Sheet = this };
 
     private List<int> GetHiddenColumns(XElement root, XNamespace ns)
     {
