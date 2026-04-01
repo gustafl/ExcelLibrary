@@ -1,11 +1,11 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio Version 18
+VisualStudioVersion = 18.4.11620.152 stable
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelLibrary", "ExcelLibrary\ExcelLibrary.csproj", "{CD544247-A373-46D7-B923-574CE23FA3E9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelLibrary", "src\ExcelLibrary\ExcelLibrary.csproj", "{CD544247-A373-46D7-B923-574CE23FA3E9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelLibrary.Tests", "ExcelLibrary.Tests\ExcelLibrary.Tests.csproj", "{FD6F8DB9-A5BD-4383-9E56-4B865DA21F1F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelLibrary.Tests", "tests\ExcelLibrary.Tests\ExcelLibrary.Tests.csproj", "{FD6F8DB9-A5BD-4383-9E56-4B865DA21F1F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,5 +24,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5F078578-896D-48EB-9725-80280F2811AE}
 	EndGlobalSection
 EndGlobal
