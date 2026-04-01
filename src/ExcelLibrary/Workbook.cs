@@ -1,5 +1,16 @@
 ﻿namespace ExcelLibrary;
 
+/// <summary>
+/// Represents an Excel workbook (.xlsx file) and provides access to its sheets, cells, and metadata.
+/// </summary>
+/// <example>
+/// <code>
+/// var workbook = new Workbook();
+/// workbook.Open("data.xlsx");
+/// var sheet = workbook.Sheet("Sheet1");
+/// var value = sheet?.Cell("A1")?.Value;
+/// </code>
+/// </example>
 public class Workbook
 {
     private const string NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
@@ -9,18 +20,46 @@ public class Workbook
 
     private readonly List<Sheet> sheets = [];
 
+    /// <summary>
+    /// Gets the file path of the currently opened workbook.
+    /// </summary>
     public string? File { get; private set; }
+
+    /// <summary>
+    /// Gets the shared strings table used by the workbook for string cell values.
+    /// </summary>
     public Dictionary<int, string> SharedStrings { get; } = [];
+
+    /// <summary>
+    /// Gets the number formats defined in the workbook, mapped by style index.
+    /// </summary>
     public Dictionary<int, NumberFormat> NumberFormats { get; } = [];
+
+    /// <summary>
+    /// Gets or sets the options controlling how the workbook is loaded and accessed.
+    /// </summary>
     public WorkbookOptions Options { get; set; } = new();
+
+    /// <summary>
+    /// Gets the base year for date calculations. Returns 1904 for Mac-created files, otherwise 1900.
+    /// </summary>
     public int BaseYear { get; private set; } = 1900;
 
+    /// <summary>
+    /// Opens an Excel workbook from the specified file path using default options.
+    /// </summary>
+    /// <param name="file">The path to the .xlsx file.</param>
     public void Open(string file)
     {
         File = file;
         Open();
     }
 
+    /// <summary>
+    /// Opens an Excel workbook from the specified file path with custom options.
+    /// </summary>
+    /// <param name="file">The path to the .xlsx file.</param>
+    /// <param name="options">The options controlling how the workbook is loaded.</param>
     public void Open(string file, WorkbookOptions options)
     {
         File = file;
@@ -165,10 +204,18 @@ public class Workbook
         }
     }
 
+    /// <summary>
+    /// Gets the sheets in the workbook. Hidden sheets are excluded unless <see cref="WorkbookOptions.IncludeHidden"/> is <c>true</c>.
+    /// </summary>
     public IEnumerable<Sheet> Sheets =>
         Options.IncludeHidden
             ? sheets.OrderBy(s => s.Id)
             : sheets.Where(s => !s.Hidden).OrderBy(s => s.Id);
 
+    /// <summary>
+    /// Gets a sheet by its name.
+    /// </summary>
+    /// <param name="name">The name of the sheet.</param>
+    /// <returns>The sheet with the specified name, or <c>null</c> if not found.</returns>
     public Sheet? Sheet(string name) => sheets.SingleOrDefault(s => s.Name == name);
 }

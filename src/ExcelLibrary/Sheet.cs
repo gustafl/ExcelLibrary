@@ -1,5 +1,11 @@
 namespace ExcelLibrary;
 
+/// <summary>
+/// Represents a worksheet within an Excel workbook.
+/// </summary>
+/// <param name="name">The name of the sheet.</param>
+/// <param name="id">The relationship ID of the sheet.</param>
+/// <param name="hidden">Whether the sheet is hidden.</param>
 public partial class Sheet(string name, string? id = null, bool hidden = false)
 {
     private const string NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
@@ -8,31 +14,69 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
     private readonly List<Row> rows = [];
     private readonly List<Column> columns = [];
 
+    /// <summary>
+    /// Gets or sets the name of the sheet as displayed in Excel.
+    /// </summary>
     public string Name { get; set; } = name;
+
+    /// <summary>
+    /// Gets or sets the relationship ID used internally by Excel.
+    /// </summary>
     public string? Id { get; set; } = id;
 
+    /// <summary>
+    /// Gets or sets the path to the sheet's XML file within the workbook archive.
+    /// </summary>
     public string Path
     {
         get => path?.ToLower() ?? string.Empty;
         set => path = value;
     }
 
+    /// <summary>
+    /// Gets or sets whether this sheet is hidden in Excel.
+    /// </summary>
     public bool Hidden { get; set; } = hidden;
+
+    /// <summary>
+    /// Gets the parent workbook containing this sheet.
+    /// </summary>
     public required Workbook Workbook { get; set; }
 
+    /// <summary>
+    /// Gets a row by its 1-based index.
+    /// </summary>
+    /// <param name="index">The 1-based row index.</param>
+    /// <returns>The row at the specified index, or <c>null</c> if not found or hidden (when <see cref="WorkbookOptions.IncludeHidden"/> is <c>false</c>).</returns>
     public Row? Row(int index) =>
         Workbook.Options.IncludeHidden
             ? rows.SingleOrDefault(r => r.Index == index)
             : rows.SingleOrDefault(r => r.Index == index && !r.Hidden);
 
+    /// <summary>
+    /// Gets a column by its 1-based index.
+    /// </summary>
+    /// <param name="index">The 1-based column index (1 = A, 2 = B, etc.).</param>
+    /// <returns>The column at the specified index, or <c>null</c> if not found or hidden (when <see cref="WorkbookOptions.IncludeHidden"/> is <c>false</c>).</returns>
     public Column? Column(int index) =>
         Workbook.Options.IncludeHidden
             ? columns.SingleOrDefault(c => c.Index == index)
             : columns.SingleOrDefault(c => c.Index == index && !c.Hidden);
 
+    /// <summary>
+    /// Gets a cell by its row and column indices.
+    /// </summary>
+    /// <param name="rowIndex">The 1-based row index.</param>
+    /// <param name="columnIndex">The 1-based column index.</param>
+    /// <returns>The cell at the specified position, or <c>null</c> if not found or in a hidden row/column.</returns>
     public Cell? Cell(int rowIndex, int columnIndex) =>
         FindCell(rows.SelectMany(r => r.Cells), rowIndex, columnIndex);
 
+    /// <summary>
+    /// Gets a cell by its Excel-style address (e.g., "A1", "B2", "AA10").
+    /// </summary>
+    /// <param name="name">The cell address in Excel notation.</param>
+    /// <returns>The cell at the specified address, or <c>null</c> if not found or in a hidden row/column.</returns>
     public Cell? Cell(string name)
     {
         var match = CellAddressRegex().Match(name);
@@ -47,21 +91,33 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
             : cells.SingleOrDefault(c => c.Row.Index == rowIndex && !c.Row.Hidden &&
                                          c.Column.Index == columnIndex && !c.Column.Hidden);
 
+    /// <summary>
+    /// Gets all cells in the sheet. Hidden cells are excluded unless <see cref="WorkbookOptions.IncludeHidden"/> is <c>true</c>.
+    /// </summary>
     public IEnumerable<Cell> Cells =>
         Workbook.Options.IncludeHidden
             ? rows.SelectMany(r => r.Cells)
             : rows.Where(r => !r.Hidden).SelectMany(r => r.Cells);
 
+    /// <summary>
+    /// Gets all rows in the sheet. Hidden rows are excluded unless <see cref="WorkbookOptions.IncludeHidden"/> is <c>true</c>.
+    /// </summary>
     public IEnumerable<Row> Rows =>
         Workbook.Options.IncludeHidden
             ? rows.OrderBy(r => r.Index)
             : rows.Where(r => !r.Hidden).OrderBy(r => r.Index);
 
+    /// <summary>
+    /// Gets all columns in the sheet. Hidden columns are excluded unless <see cref="WorkbookOptions.IncludeHidden"/> is <c>true</c>.
+    /// </summary>
     public IEnumerable<Column> Columns =>
         Workbook.Options.IncludeHidden
             ? columns.OrderBy(c => c.Index)
             : columns.Where(c => !c.Hidden).OrderBy(c => c.Index);
 
+    /// <summary>
+    /// Loads the sheet's data from the workbook file. Call this method when <see cref="WorkbookOptions.LoadSheets"/> is <c>false</c>.
+    /// </summary>
     public void Open()
     {
         using var archive = ZipFile.OpenRead(Workbook.File!);
