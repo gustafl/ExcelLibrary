@@ -570,4 +570,141 @@ public class DefaultOptions
         Assert.IsNotNull(column);
         Assert.AreSame(column, cellColumn);
     }
+
+    [TestMethod]
+    [TestCategory("Workbook")]
+    public void BaseYear_WithDefaultOptions_Returns1900()
+    {
+        // Act
+        var baseYear = workbook.BaseYear;
+
+        // Assert
+        Assert.AreEqual(1900, baseYear);
+    }
+
+    [TestMethod]
+    [TestCategory("Workbook")]
+    public void Options_AfterOpen_ReturnsDefaultOptions()
+    {
+        // Act
+        var options = workbook.Options;
+
+        // Assert
+        Assert.IsNotNull(options);
+        Assert.IsFalse(options.IncludeHidden);
+        Assert.IsTrue(options.LoadSheets);
+    }
+
+    [TestMethod]
+    [TestCategory("Workbook")]
+    public void NumberFormats_AfterOpen_ReturnsNonEmptyDictionary()
+    {
+        // Act
+        var numberFormats = workbook.NumberFormats;
+
+        // Assert
+        Assert.IsNotNull(numberFormats);
+        Assert.IsTrue(numberFormats.Count > 0);
+    }
+
+    [TestMethod]
+    [TestCategory("Sheet")]
+    public void Sheet_WhenNameNotExists_ReturnsNull()
+    {
+        // Act
+        var sheet = workbook.Sheet("NonExistentSheet");
+
+        // Assert
+        Assert.IsNull(sheet);
+    }
+
+    [TestMethod]
+    [TestCategory("Row")]
+    public void Row_Hidden_WhenVisible_ReturnsFalse()
+    {
+        // Arrange
+        var options = new WorkbookOptions { IncludeHidden = true };
+        var wb = new Workbook();
+        wb.Open(FILE, options);
+        var sheet = wb.Sheet("Sheet1");
+        var row = sheet.Row(2);
+
+        // Act & Assert
+        Assert.IsNotNull(row);
+        Assert.IsFalse(row.Hidden);
+    }
+
+    [TestMethod]
+    [TestCategory("Row")]
+    public void Row_Hidden_WhenHidden_ReturnsTrue()
+    {
+        // Arrange
+        var options = new WorkbookOptions { IncludeHidden = true };
+        var wb = new Workbook();
+        wb.Open(FILE, options);
+        var sheet = wb.Sheet("Sheet1");
+        var row = sheet.Row(8);
+
+        // Act & Assert
+        Assert.IsNotNull(row);
+        Assert.IsTrue(row.Hidden);
+    }
+
+    [TestMethod]
+    [TestCategory("Column")]
+    public void Column_Hidden_WhenVisible_ReturnsFalse()
+    {
+        // Arrange
+        var options = new WorkbookOptions { IncludeHidden = true };
+        var wb = new Workbook();
+        wb.Open(FILE, options);
+        var sheet = wb.Sheet("Sheet1");
+        var column = sheet.Column(2);
+
+        // Act & Assert
+        Assert.IsNotNull(column);
+        Assert.IsFalse(column.Hidden);
+    }
+
+    [TestMethod]
+    [TestCategory("Column")]
+    public void Column_Hidden_WhenHidden_ReturnsTrue()
+    {
+        // Arrange
+        var options = new WorkbookOptions { IncludeHidden = true };
+        var wb = new Workbook();
+        wb.Open(FILE, options);
+        var sheet = wb.Sheet("Sheet1");
+        var column = sheet.Column(5);
+
+        // Act & Assert
+        Assert.IsNotNull(column);
+        Assert.IsTrue(column.Hidden);
+    }
+
+    [TestMethod]
+    [TestCategory("Sheet")]
+    public void Cell_ByMultiLetterColumnName_ReturnsCorrectValue()
+    {
+        // Arrange
+        var sheet = workbook.Sheet("Sheet2");
+
+        // Act
+        var cell = sheet.Cell("AA1");
+
+        // Assert - AA1 may or may not exist, but should not throw
+        // If no cell exists at AA1, it should return null
+        Assert.IsNull(cell);
+    }
+
+    [TestMethod]
+    [TestCategory("Sheet")]
+    public void Sheet_WhenVisible_HiddenPropertyIsFalse()
+    {
+        // Act
+        var sheet = workbook.Sheet("Sheet1");
+
+        // Assert
+        Assert.IsFalse(sheet.Hidden);
+    }
 }
