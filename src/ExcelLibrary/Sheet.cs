@@ -12,8 +12,8 @@ public class Sheet
     private const string NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
 
     private string path;
-    private readonly List<Row> rows = new List<Row>();
-    private readonly List<Column> columns = new List<Column>();
+    private readonly List<Row> rows = [];
+    private readonly List<Column> columns = [];
 
     public Sheet(string name)
     {
@@ -32,8 +32,8 @@ public class Sheet
 
     public string Path
     {
-        get { return path.ToLower(); }
-        set { path = value; }
+        get => path.ToLower();
+        set => path = value;
     }
 
     public bool Hidden { get; set; }
@@ -256,38 +256,14 @@ public class Sheet
         }
     }
 
-    private bool IsSharedString(XElement cell) 
-    {
-        XAttribute attribute = cell.Attribute("t");
-        if (attribute != null)
-        {
-            if (attribute.Value == "s")
-            {
-                return true;
-            }
-        }
+    private bool IsSharedString(XElement cell) => cell.Attribute("t") is { Value: "s" };
 
-        return false;
-    }
-
-    private ExcelLibrary.Column GetColumn(int columnIndex)
-    {
-        // Try to find an existing column with the same index
-        Column column = this.columns.SingleOrDefault(c => c.Index == columnIndex);
-        
-        if (column != null)
-        {
-            return column;
-        }
-        else
-        {
-            return new Column(columnIndex);
-        }
-    }
+    private Column GetColumn(int columnIndex) =>
+        columns.SingleOrDefault(c => c.Index == columnIndex) ?? new Column(columnIndex);
 
     private List<int> GetHiddenColumns(XElement root, XNamespace ns)
     {
-        List<int> hiddenColumns = new List<int>();
+        List<int> hiddenColumns = [];
         XElement eCols = root.Element(ns + "cols");
 
         if (eCols != null)

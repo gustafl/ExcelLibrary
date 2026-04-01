@@ -5,7 +5,7 @@ namespace ExcelLibrary;
 
 public class Column
 {
-    private readonly List<Cell> cells = new List<Cell>();
+    private readonly List<Cell> cells = [];
 
     public Column(int index)
     {

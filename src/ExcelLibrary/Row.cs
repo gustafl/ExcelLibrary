@@ -5,7 +5,7 @@ namespace ExcelLibrary;
 
 public class Row
 {
-    private readonly List<Cell> cells = new List<Cell>();
+    private readonly List<Cell> cells = [];
 
     public Row(int index)
     {

@@ -13,12 +13,12 @@ public class Workbook
     private const string NS_OR = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     private const string NS_ORW = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet";
 
-    private readonly List<Sheet> sheets = new List<Sheet>();
+    private readonly List<Sheet> sheets = [];
 
     public string File { get; private set; }
-    public Dictionary<int, string> SharedStrings { get; } = new Dictionary<int, string>();
-    public Dictionary<int, NumberFormat> NumberFormats { get; } = new Dictionary<int, NumberFormat>();
-    public WorkbookOptions Options { get; set; } = new WorkbookOptions();
+    public Dictionary<int, string> SharedStrings { get; } = [];
+    public Dictionary<int, NumberFormat> NumberFormats { get; } = [];
+    public WorkbookOptions Options { get; set; } = new();
     public int BaseYear { get; private set; } = 1900;
 
     public void Open(string file)
@@ -224,8 +224,5 @@ public class Workbook
         }
     }
 
-    public Sheet Sheet(string name)
-    {
-        return sheets.SingleOrDefault(s => s.Name == name);
-    }
+    public Sheet Sheet(string name) => sheets.SingleOrDefault(s => s.Name == name);
 }
