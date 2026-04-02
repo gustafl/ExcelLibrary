@@ -7,22 +7,22 @@
 public class Cell(string value)
 {
     /// <summary>
-    /// Gets or sets the row containing this cell.
+    /// Gets the row containing this cell.
     /// </summary>
-    public required Row Row { get; set; }
+    public required Row Row { get; init; }
 
     /// <summary>
-    /// Gets or sets the column containing this cell.
+    /// Gets the column containing this cell.
     /// </summary>
-    public required Column Column { get; set; }
+    public required Column Column { get; init; }
 
     /// <summary>
-    /// Gets or sets the cell's value as a string.
+    /// Gets the cell's value as a string.
     /// </summary>
-    public string Value { get; set; } = value;
+    public string Value { get; init; } = value;
 
     /// <summary>
-    /// Gets or sets the number format applied to this cell.
+    /// Gets the number format applied to this cell.
     /// </summary>
-    public NumberFormat Format { get; set; }
+    public NumberFormat Format { get; init; } = NumberFormat.General;
 }

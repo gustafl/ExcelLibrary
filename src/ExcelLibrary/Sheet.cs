@@ -181,14 +181,17 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
                 var column = GetColumn(columnIndex);
                 column.Hidden = hiddenColumns.Contains(columnIndex);
 
-                // Make cell
-                string cellValue = sharedString ?? xValue.Value;
-                var cell = new Cell(cellValue) { Column = column, Row = row, Format = format };
+                // Compute cell value (with format conversion)
+                string rawValue = sharedString ?? xValue.Value;
+                string cellValue = format switch
+                {
+                    NumberFormat.Date => Utilities.ConvertDate(rawValue, Workbook.BaseYear),
+                    NumberFormat.Time => Utilities.ConvertTime(rawValue),
+                    _ => rawValue
+                };
 
-                if (format is NumberFormat.Date)
-                    cell.Value = Utilities.ConvertDate(cell.Value, Workbook.BaseYear);
-                else if (format is NumberFormat.Time)
-                    cell.Value = Utilities.ConvertTime(cell.Value);
+                // Make cell
+                var cell = new Cell(cellValue) { Column = column, Row = row, Format = format };
 
                 // Add cell to row and column
                 row.AddCell(cell);

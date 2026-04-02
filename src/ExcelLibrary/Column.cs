@@ -40,7 +40,6 @@ public class Column(int index, bool hidden = false)
     {
         if (cells.SingleOrDefault(c => c.Row.Index == cell.Row.Index) is null)
         {
-            cell.Column = this;
             cells.Add(cell);
         }
     }
