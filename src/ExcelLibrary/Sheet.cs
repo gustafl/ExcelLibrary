@@ -10,38 +10,33 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
 {
     private const string NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
 
-    private string? path;
     private readonly List<Row> rows = [];
     private readonly List<Column> columns = [];
 
     /// <summary>
-    /// Gets or sets the name of the sheet as displayed in Excel.
+    /// Gets the name of the sheet as displayed in Excel.
     /// </summary>
-    public string Name { get; set; } = name;
+    public string Name { get; } = name;
 
     /// <summary>
-    /// Gets or sets the relationship ID used internally by Excel.
+    /// Gets the relationship ID used internally by Excel.
     /// </summary>
-    public string? Id { get; set; } = id;
+    public string? Id { get; } = id;
 
     /// <summary>
-    /// Gets or sets the path to the sheet's XML file within the workbook archive.
+    /// Gets the path to the sheet's XML file within the workbook archive.
     /// </summary>
-    public string Path
-    {
-        get => path?.ToLower() ?? string.Empty;
-        set => path = value;
-    }
+    public required string Path { get; init; }
 
     /// <summary>
-    /// Gets or sets whether this sheet is hidden in Excel.
+    /// Gets whether this sheet is hidden in Excel.
     /// </summary>
-    public bool Hidden { get; set; } = hidden;
+    public bool Hidden { get; } = hidden;
 
     /// <summary>
     /// Gets the parent workbook containing this sheet.
     /// </summary>
-    public required Workbook Workbook { get; set; }
+    public required Workbook Workbook { get; init; }
 
     /// <summary>
     /// Gets a row by its 1-based index.
@@ -121,7 +116,7 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
     public void Open()
     {
         using var archive = ZipFile.OpenRead(Workbook.File!);
-        var entry = archive.Entries.FirstOrDefault(e => e.FullName == Path.ToLower());
+        var entry = archive.Entries.FirstOrDefault(e => e.FullName.Equals(Path, StringComparison.OrdinalIgnoreCase));
         if (entry is null) return;
 
         var document = XDocument.Load(entry.Open());

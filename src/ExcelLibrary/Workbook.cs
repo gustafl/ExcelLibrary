@@ -18,7 +18,24 @@ public class Workbook
     private const string NS_OR = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     private const string NS_ORW = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet";
 
+    private static readonly Dictionary<int, NumberFormat> NumberFormatMapping = new()
+    {
+        [0] = NumberFormat.General,
+        [2] = NumberFormat.Number,
+        [10] = NumberFormat.Percentage,
+        [11] = NumberFormat.Scientific,
+        [13] = NumberFormat.Fraction,
+        [14] = NumberFormat.Date,
+        [44] = NumberFormat.Accounting,
+        [49] = NumberFormat.Text,
+        [164] = NumberFormat.Currency,
+        [165] = NumberFormat.Time,
+        [166] = NumberFormat.Custom
+    };
+
     private readonly List<Sheet> sheets = [];
+    private readonly Dictionary<int, string> sharedStrings = [];
+    private readonly Dictionary<int, NumberFormat> numberFormats = [];
 
     /// <summary>
     /// Gets the file path of the currently opened workbook.
@@ -28,17 +45,17 @@ public class Workbook
     /// <summary>
     /// Gets the shared strings table used by the workbook for string cell values.
     /// </summary>
-    public Dictionary<int, string> SharedStrings { get; } = [];
+    public IReadOnlyDictionary<int, string> SharedStrings => sharedStrings;
 
     /// <summary>
     /// Gets the number formats defined in the workbook, mapped by style index.
     /// </summary>
-    public Dictionary<int, NumberFormat> NumberFormats { get; } = [];
+    public IReadOnlyDictionary<int, NumberFormat> NumberFormats => numberFormats;
 
     /// <summary>
-    /// Gets or sets the options controlling how the workbook is loaded and accessed.
+    /// Gets the options controlling how the workbook is loaded and accessed.
     /// </summary>
-    public WorkbookOptions Options { get; set; } = new();
+    public WorkbookOptions Options { get; private set; } = new();
 
     /// <summary>
     /// Gets the base year for date calculations. Returns 1904 for Mac-created files, otherwise 1900.
@@ -72,15 +89,29 @@ public class Workbook
         if (File is null) return;
         using var archive = ZipFile.OpenRead(File);
 
-        // Read "xl/workbook.xml" to get sheet names and ids
+        // Collect sheet metadata from both XML files before creating Sheet objects
+        var sheetMetadata = new Dictionary<string, SheetMetadata>();
+
+        // Read "xl/workbook.xml" to get sheet names, ids, and hidden state
         var sheetsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/workbook.xml");
         if (sheetsEntry is not null)
-            LoadWorkbookXml(sheetsEntry);
+            LoadWorkbookXml(sheetsEntry, sheetMetadata);
 
         // Read "xl/_rels/workbook.xml.rels" to get sheet paths
         var sheetPathsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/_rels/workbook.xml.rels");
         if (sheetPathsEntry is not null)
-            LoadWorkbookXmlRels(sheetPathsEntry);
+            LoadWorkbookXmlRels(sheetPathsEntry, sheetMetadata);
+
+        // Now create Sheet objects with complete metadata
+        foreach (var metadata in sheetMetadata.Values)
+        {
+            var sheet = new Sheet(metadata.Name, metadata.Id, metadata.Hidden)
+            {
+                Workbook = this,
+                Path = metadata.Path ?? string.Empty
+            };
+            sheets.Add(sheet);
+        }
 
         // Read "xl/sharedStrings.xml" to get shared strings
         var sharedStringsEntry = archive.Entries.FirstOrDefault(e => e.FullName == "xl/sharedStrings.xml");
@@ -100,7 +131,15 @@ public class Workbook
         }
     }
 
-    private void LoadWorkbookXml(ZipArchiveEntry entry)
+    /// <summary>
+    /// Temporary container for sheet metadata during workbook loading.
+    /// </summary>
+    private sealed record SheetMetadata(string Name, string? Id, bool Hidden)
+    {
+        public string? Path { get; set; }
+    }
+
+    private void LoadWorkbookXml(ZipArchiveEntry entry, Dictionary<string, SheetMetadata> sheetMetadata)
     {
         var document = XDocument.Load(entry.Open());
         var root = document.Root;
@@ -120,15 +159,14 @@ public class Workbook
         {
             var id = element.Attribute(r + "id")?.Value;
             var name = element.Attribute("name")?.Value;
-            if (name is null) continue;
+            if (name is null || id is null) continue;
 
             bool hidden = element.Attribute("state") is { Value: "hidden" };
-            var sheet = new Sheet(name, id, hidden) { Workbook = this };
-            sheets.Add(sheet);
+            sheetMetadata[id] = new SheetMetadata(name, id, hidden);
         }
     }
 
-    private void LoadWorkbookXmlRels(ZipArchiveEntry entry)
+    private void LoadWorkbookXmlRels(ZipArchiveEntry entry, Dictionary<string, SheetMetadata> sheetMetadata)
     {
         var document = XDocument.Load(entry.Open());
         var root = document.Root;
@@ -146,12 +184,11 @@ public class Workbook
             var target = element.Attribute("Target")?.Value;
             if (id is null || target is null) continue;
 
-            var sheet = sheets.FirstOrDefault(s => s.Id == id);
-            if (sheet is null) continue;
+            if (!sheetMetadata.TryGetValue(id, out var metadata)) continue;
 
             // Get sheet file path
             var match = Regex.Match(target, @"worksheets/(.+)");
-            sheet.Path = $"xl/worksheets/{match.Groups[1].Value}".ToLower();
+            metadata.Path = $"xl/worksheets/{match.Groups[1].Value}".ToLower();
         }
     }
 
@@ -167,7 +204,7 @@ public class Workbook
         foreach (var si in root.Elements(ns + "si"))
         {
             string sum = string.Concat(si.Descendants(ns + "t").Select(t => t.Value));
-            SharedStrings.Add(count++, sum);
+            sharedStrings.Add(count++, sum);
         }
     }
 
@@ -184,22 +221,9 @@ public class Workbook
         {
             if (element.Attribute("numFmtId") is { } numFmtId)
             {
-                int numberFormatId = int.Parse(numFmtId.Value);
-                NumberFormats.Add(index++, numberFormatId switch
-                {
-                    0 => NumberFormat.General,
-                    2 => NumberFormat.Number,
-                    164 => NumberFormat.Currency,
-                    44 => NumberFormat.Accounting,
-                    14 => NumberFormat.Date,
-                    165 => NumberFormat.Time,
-                    49 => NumberFormat.Text,
-                    10 => NumberFormat.Percentage,
-                    13 => NumberFormat.Fraction,
-                    166 => NumberFormat.Custom,
-                    11 => NumberFormat.Scientific,
-                    _ => NumberFormat.Unsupported
-                });
+                int formatId = int.Parse(numFmtId.Value);
+                var format = NumberFormatMapping.GetValueOrDefault(formatId, NumberFormat.Unsupported);
+                numberFormats.Add(index++, format);
             }
         }
     }
