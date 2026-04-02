@@ -178,8 +178,8 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
                 }
 
                 // Make column
-                var column = GetColumn(columnIndex);
-                column.Hidden = hiddenColumns.Contains(columnIndex);
+                bool isHiddenColumn = hiddenColumns.Contains(columnIndex);
+                var column = GetOrCreateColumn(columnIndex, isHiddenColumn);
 
                 // Compute cell value (with format conversion)
                 string rawValue = sharedString ?? xValue.Value;
@@ -206,8 +206,8 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
 
     private bool IsSharedString(XElement cell) => cell.Attribute("t") is { Value: "s" };
 
-    private Column GetColumn(int columnIndex) =>
-        columns.SingleOrDefault(c => c.Index == columnIndex) ?? new Column(columnIndex) { Sheet = this };
+    private Column GetOrCreateColumn(int columnIndex, bool hidden) =>
+        columns.SingleOrDefault(c => c.Index == columnIndex) ?? new Column(columnIndex, hidden) { Sheet = this };
 
     private List<int> GetHiddenColumns(XElement root, XNamespace ns)
     {
@@ -249,20 +249,18 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
         return number;
     }
 
-    public void AddRow(Row row)
+    internal void AddRow(Row row)
     {
         if (rows.SingleOrDefault(r => r.Index == row.Index) is null)
         {
-            row.Sheet = this;
             rows.Add(row);
         }
     }
 
-    public void AddColumn(Column column)
+    internal void AddColumn(Column column)
     {
         if (columns.SingleOrDefault(c => c.Index == column.Index) is null)
         {
-            column.Sheet = this;
             columns.Add(column);
         }
     }

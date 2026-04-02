@@ -10,19 +10,19 @@ public class Row(int index, bool hidden = false)
     private readonly List<Cell> cells = [];
 
     /// <summary>
-    /// Gets or sets the 1-based row index.
+    /// Gets the 1-based row index.
     /// </summary>
-    public int Index { get; set; } = index;
+    public int Index { get; } = index;
 
     /// <summary>
-    /// Gets or sets whether this row is hidden in Excel.
+    /// Gets whether this row is hidden in Excel.
     /// </summary>
-    public bool Hidden { get; set; } = hidden;
+    public bool Hidden { get; } = hidden;
 
     /// <summary>
     /// Gets the parent sheet containing this row.
     /// </summary>
-    public required Sheet Sheet { get; set; }
+    public required Sheet Sheet { get; init; }
 
     /// <summary>
     /// Gets the cells in this row. Cells in hidden columns are excluded unless <see cref="WorkbookOptions.IncludeHidden"/> is <c>true</c>.
@@ -33,10 +33,10 @@ public class Row(int index, bool hidden = false)
             : cells.Where(c => !c.Column.Hidden).OrderBy(c => c.Column.Index);
 
     /// <summary>
-    /// Adds a cell to this row. Internal use only.
+    /// Adds a cell to this row.
     /// </summary>
     /// <param name="cell">The cell to add.</param>
-    public void AddCell(Cell cell)
+    internal void AddCell(Cell cell)
     {
         if (cells.SingleOrDefault(c => c.Column.Index == cell.Column.Index) is null)
         {
