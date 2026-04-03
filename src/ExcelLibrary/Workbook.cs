@@ -126,8 +126,11 @@ public class Workbook
         // Optionally load all sheets
         if (Options.LoadSheets)
         {
-            foreach (var sheet in sheets)
-                sheet.Open();
+            if (Options.ParallelLoadSheets)
+                Parallel.ForEach(sheets, sheet => sheet.Open());
+            else
+                foreach (var sheet in sheets)
+                    sheet.Open();
         }
     }
 

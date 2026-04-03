@@ -17,4 +17,11 @@ public record WorkbookOptions
     /// Default is <c>true</c>.
     /// </summary>
     public bool LoadSheets { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether sheets should be loaded in parallel when <see cref="LoadSheets"/> is <c>true</c>.
+    /// Parallel loading can improve performance for workbooks with many sheets.
+    /// Default is <c>false</c>.
+    /// </summary>
+    public bool ParallelLoadSheets { get; init; }
 }

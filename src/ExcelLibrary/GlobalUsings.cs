@@ -5,4 +5,5 @@ global using System.IO;
 global using System.IO.Compression;
 global using System.Linq;
 global using System.Text.RegularExpressions;
+global using System.Threading.Tasks;
 global using System.Xml.Linq;
