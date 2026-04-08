@@ -10,8 +10,8 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
 {
     private const string NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
 
-    private readonly List<Row> rows = [];
-    private readonly List<Column> columns = [];
+    private readonly Dictionary<int, Row> rowsByIndex = [];
+    private readonly Dictionary<int, Column> columnsByIndex = [];
 
     /// <summary>
     /// Gets the name of the sheet as displayed in Excel.
@@ -43,20 +43,24 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
     /// </summary>
     /// <param name="index">The 1-based row index.</param>
     /// <returns>The row at the specified index, or <c>null</c> if not found or hidden (when <see cref="WorkbookOptions.IncludeHidden"/> is <c>false</c>).</returns>
-    public Row? Row(int index) =>
-        Workbook.Options.IncludeHidden
-            ? rows.SingleOrDefault(r => r.Index == index)
-            : rows.SingleOrDefault(r => r.Index == index && !r.Hidden);
+    public Row? Row(int index)
+    {
+        if (!rowsByIndex.TryGetValue(index, out var row))
+            return null;
+        return Workbook.Options.IncludeHidden || !row.Hidden ? row : null;
+    }
 
     /// <summary>
     /// Gets a column by its 1-based index.
     /// </summary>
     /// <param name="index">The 1-based column index (1 = A, 2 = B, etc.).</param>
     /// <returns>The column at the specified index, or <c>null</c> if not found or hidden (when <see cref="WorkbookOptions.IncludeHidden"/> is <c>false</c>).</returns>
-    public Column? Column(int index) =>
-        Workbook.Options.IncludeHidden
-            ? columns.SingleOrDefault(c => c.Index == index)
-            : columns.SingleOrDefault(c => c.Index == index && !c.Hidden);
+    public Column? Column(int index)
+    {
+        if (!columnsByIndex.TryGetValue(index, out var column))
+            return null;
+        return Workbook.Options.IncludeHidden || !column.Hidden ? column : null;
+    }
 
     /// <summary>
     /// Gets a cell by its row and column indices.
@@ -64,8 +68,11 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
     /// <param name="rowIndex">The 1-based row index.</param>
     /// <param name="columnIndex">The 1-based column index.</param>
     /// <returns>The cell at the specified position, or <c>null</c> if not found or in a hidden row/column.</returns>
-    public Cell? Cell(int rowIndex, int columnIndex) =>
-        FindCell(rows.SelectMany(r => r.Cells), rowIndex, columnIndex);
+    public Cell? Cell(int rowIndex, int columnIndex)
+    {
+        var row = Row(rowIndex);
+        return row?.Cell(columnIndex);
+    }
 
     /// <summary>
     /// Gets a cell by its Excel-style address (e.g., "A1", "B2", "AA10").
@@ -75,40 +82,34 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
     public Cell? Cell(string name)
     {
         var match = CellAddressRegex().Match(name);
-        int columnIndex = GetColumnIndex(match.Groups[1].Value);
-        int rowIndex = int.Parse(match.Groups[2].Value);
-        return FindCell(rows.SelectMany(r => r.Cells), rowIndex, columnIndex);
+        int columnIndex = GetColumnIndex(match.Groups[1].ValueSpan);
+        int rowIndex = int.Parse(match.Groups[2].ValueSpan);
+        return Cell(rowIndex, columnIndex);
     }
-
-    private Cell? FindCell(IEnumerable<Cell> cells, int rowIndex, int columnIndex) =>
-        Workbook.Options.IncludeHidden
-            ? cells.SingleOrDefault(c => c.Row.Index == rowIndex && c.Column.Index == columnIndex)
-            : cells.SingleOrDefault(c => c.Row.Index == rowIndex && !c.Row.Hidden &&
-                                         c.Column.Index == columnIndex && !c.Column.Hidden);
 
     /// <summary>
     /// Gets all cells in the sheet. Hidden cells are excluded unless <see cref="WorkbookOptions.IncludeHidden"/> is <c>true</c>.
     /// </summary>
     public IEnumerable<Cell> Cells =>
         Workbook.Options.IncludeHidden
-            ? rows.SelectMany(r => r.Cells)
-            : rows.Where(r => !r.Hidden).SelectMany(r => r.Cells);
+            ? rowsByIndex.Values.SelectMany(r => r.Cells)
+            : rowsByIndex.Values.Where(r => !r.Hidden).SelectMany(r => r.Cells);
 
     /// <summary>
     /// Gets all rows in the sheet. Hidden rows are excluded unless <see cref="WorkbookOptions.IncludeHidden"/> is <c>true</c>.
     /// </summary>
     public IEnumerable<Row> Rows =>
         Workbook.Options.IncludeHidden
-            ? rows.OrderBy(r => r.Index)
-            : rows.Where(r => !r.Hidden).OrderBy(r => r.Index);
+            ? rowsByIndex.Values.OrderBy(r => r.Index)
+            : rowsByIndex.Values.Where(r => !r.Hidden).OrderBy(r => r.Index);
 
     /// <summary>
     /// Gets all columns in the sheet. Hidden columns are excluded unless <see cref="WorkbookOptions.IncludeHidden"/> is <c>true</c>.
     /// </summary>
     public IEnumerable<Column> Columns =>
         Workbook.Options.IncludeHidden
-            ? columns.OrderBy(c => c.Index)
-            : columns.Where(c => !c.Hidden).OrderBy(c => c.Index);
+            ? columnsByIndex.Values.OrderBy(c => c.Index)
+            : columnsByIndex.Values.Where(c => !c.Hidden).OrderBy(c => c.Index);
 
     /// <summary>
     /// Loads the sheet's data from the workbook file. Call this method when <see cref="WorkbookOptions.LoadSheets"/> is <c>false</c>.
@@ -201,12 +202,16 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
 
     private bool IsSharedString(XElement cell) => cell.Attribute("t") is { Value: "s" };
 
-    private Column GetOrCreateColumn(int columnIndex, bool hidden) =>
-        columns.SingleOrDefault(c => c.Index == columnIndex) ?? new Column(columnIndex, hidden) { Sheet = this };
-
-    private List<int> GetHiddenColumns(XElement root, XNamespace ns)
+    private Column GetOrCreateColumn(int columnIndex, bool hidden)
     {
-        List<int> hiddenColumns = [];
+        if (columnsByIndex.TryGetValue(columnIndex, out var existing))
+            return existing;
+        return new Column(columnIndex, hidden) { Sheet = this };
+    }
+
+    private HashSet<int> GetHiddenColumns(XElement root, XNamespace ns)
+    {
+        HashSet<int> hiddenColumns = [];
         var eCols = root.Element(ns + "cols");
 
         if (eCols is null)
@@ -231,7 +236,7 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
     [GeneratedRegex(@"([A-Z]+)(\d+)")]
     private static partial Regex CellAddressRegex();
 
-    private static int GetColumnIndex(string name)
+    private static int GetColumnIndex(ReadOnlySpan<char> name)
     {
         int number = 0;
         int pow = 1;
@@ -244,19 +249,7 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
         return number;
     }
 
-    internal void AddRow(Row row)
-    {
-        if (rows.SingleOrDefault(r => r.Index == row.Index) is null)
-        {
-            rows.Add(row);
-        }
-    }
+    internal void AddRow(Row row) => rowsByIndex.TryAdd(row.Index, row);
 
-    internal void AddColumn(Column column)
-    {
-        if (columns.SingleOrDefault(c => c.Index == column.Index) is null)
-        {
-            columns.Add(column);
-        }
-    }
+    internal void AddColumn(Column column) => columnsByIndex.TryAdd(column.Index, column);
 }

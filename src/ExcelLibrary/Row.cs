@@ -38,7 +38,7 @@ public class Row(int index, bool hidden = false)
     /// <param name="cell">The cell to add.</param>
     internal void AddCell(Cell cell)
     {
-        if (cells.SingleOrDefault(c => c.Column.Index == cell.Column.Index) is null)
+        if (cells.Find(c => c.Column.Index == cell.Column.Index) is null)
         {
             cells.Add(cell);
         }
@@ -51,6 +51,6 @@ public class Row(int index, bool hidden = false)
     /// <returns>The cell at the specified column, or <c>null</c> if not found or in a hidden column.</returns>
     public Cell? Cell(int index) =>
         Sheet.Workbook.Options.IncludeHidden
-            ? cells.SingleOrDefault(c => c.Column.Index == index)
-            : cells.SingleOrDefault(c => c.Column.Index == index && !c.Column.Hidden);
+            ? cells.Find(c => c.Column.Index == index)
+            : cells.Find(c => c.Column.Index == index && !c.Column.Hidden);
 }

@@ -1,38 +1,124 @@
 # ExcelLibrary
 
-This is a small C# library made to simplify reading from and writing to Excel workbooks in the Open XML file format (.xlsx). Here's an example to get you started:
+A lightweight, dependency-free .NET library for reading Excel workbooks (.xlsx).
 
-```C#
-Workbook workbook = new Workbook();
-workbook.Open("Book1.xlsx");
-Sheet sheet = workbook.Sheet("Sheet1");
-Row row = sheet.Row(2);
-Cell cell = row.Cell(3);
-string text = cell.Value;
+```csharp
+var workbook = new Workbook();
+workbook.Open("data.xlsx");
+
+var value = workbook.Sheet("Sheet1")?.Cell("B2")?.Value;
 ```
 
-See the wiki for more examples.
+## Installation
+
+```shell
+dotnet add package ExcelLibrary
+```
+
+Or via the NuGet Package Manager:
+
+```shell
+Install-Package ExcelLibrary
+```
+
+## Quick Start
+
+### Reading cells
+
+```csharp
+var workbook = new Workbook();
+workbook.Open("Book1.xlsx");
+
+// Access by sheet name and cell address
+var sheet = workbook.Sheet("Sheet1");
+var cell = sheet?.Cell("A1");
+Console.WriteLine(cell?.Value);
+
+// Or by row and column index (1-based)
+var value = sheet?.Cell(2, 3)?.Value;
+```
+
+### Iterating rows and cells
+
+```csharp
+var workbook = new Workbook();
+workbook.Open("report.xlsx");
+
+foreach (var sheet in workbook.Sheets)
+{
+    Console.WriteLine($"Sheet: {sheet.Name}");
+
+    foreach (var row in sheet.Rows)
+    {
+        foreach (var cell in row.Cells)
+        {
+            Console.Write($"{cell.Value}\t");
+        }
+        Console.WriteLine();
+    }
+}
+```
+
+### Including hidden elements
+
+By default, hidden sheets, rows, and columns are excluded. Use `WorkbookOptions` to include them:
+
+```csharp
+var workbook = new Workbook();
+workbook.Open("data.xlsx", new WorkbookOptions { IncludeHidden = true });
+
+// Now hidden sheets, rows, and columns are accessible
+var hiddenSheet = workbook.Sheet("HiddenSheet");
+```
+
+### Lazy loading sheets
+
+For large workbooks, you can defer loading sheet data until needed:
+
+```csharp
+var workbook = new Workbook();
+workbook.Open("large-file.xlsx", new WorkbookOptions { LoadSheets = false });
+
+// Sheet metadata is available, but rows/cells are not yet loaded
+var sheet = workbook.Sheet("Sheet1");
+
+// Load the sheet data when needed
+sheet?.Open();
+```
 
 ## Features
 
-* No dependencies except .NET Framework 4.5. Easy to include in other solutions.
-* Built and extendable with LINQ. Most collections in the library (e.g. `Workbook.Sheets` or `Row.Cells`) is of type `IEnumerable<T>`, which  allows you to use LINQ queries to find exactly what you need.
-* Respects the visibility of sheets, rows and columns. Set the `IncludeHidden` option to `true`to return hidden objects.
-* Well-tested. The library is being developed using principles of Test-driven development (TDD). A large set of unit tests verifies that new bugs are not introduced on code changes.
-* Well-documented. A software library is only as useful as its documentation.
+- **Zero dependencies** — Uses only built-in .NET APIs
+- **LINQ-friendly** — Collections like `Sheets`, `Rows`, and `Cells` are `IEnumerable<T>`
+- **Visibility-aware** — Respects hidden sheets, rows, and columns by default
+- **Lazy loading** — Optionally defer sheet loading for better performance
+- **Well-tested** — Comprehensive test suite with 70+ unit tests
+- **Fully documented** — XML documentation for IntelliSense support
+
+## API Reference
+
+| Class | Description |
+|-------|-------------|
+| `Workbook` | Represents an Excel file; provides access to sheets and metadata |
+| `Sheet` | A worksheet containing rows, columns, and cells |
+| `Row` | A row with access to its cells |
+| `Column` | A column with access to its cells |
+| `Cell` | A single cell with its value and format |
+| `WorkbookOptions` | Configuration for loading workbooks |
 
 ## Limitations
 
-The following things have been considered outside the scope of the project:
+This library focuses on **reading** Excel files. The following are out of scope:
 
-* All file formats except `.xslx`.
-* Formulas
-* Formatting properties
+- File formats other than `.xlsx`
+- Writing/modifying workbooks
+- Formula evaluation
+- Cell formatting/styles
 
-The following things are planned but not yet implemented features:
+## Requirements
 
-* All write functionality (writing to cells, adding new sheets, adding and deleting rows and columns and so on).
+- .NET 10.0 or later
 
-Also, the library will not create new workbooks _per se_, but the same can be achieved by including a template workbook in your project and copy it whenever you need to create a workbook.
+## License
 
-For more on project status, see the [Current status](../../wiki/Current-status) page in the wiki.
+MIT

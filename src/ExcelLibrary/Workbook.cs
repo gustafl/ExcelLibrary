@@ -5,20 +5,20 @@
 /// </summary>
 /// <example>
 /// <code>
-/// var workbook = new Workbook();
+/// using var workbook = new Workbook();
 /// workbook.Open("data.xlsx");
 /// var sheet = workbook.Sheet("Sheet1");
 /// var value = sheet?.Cell("A1")?.Value;
 /// </code>
 /// </example>
-public class Workbook
+public class Workbook : IDisposable
 {
     private const string NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
     private const string NS_PR = "http://schemas.openxmlformats.org/package/2006/relationships";
     private const string NS_OR = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     private const string NS_ORW = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet";
 
-    private static readonly Dictionary<int, NumberFormat> NumberFormatMapping = new()
+    private static readonly FrozenDictionary<int, NumberFormat> NumberFormatMapping = new Dictionary<int, NumberFormat>
     {
         [0] = NumberFormat.General,
         [2] = NumberFormat.Number,
@@ -31,7 +31,7 @@ public class Workbook
         [164] = NumberFormat.Currency,
         [165] = NumberFormat.Time,
         [166] = NumberFormat.Custom
-    };
+    }.ToFrozenDictionary();
 
     private readonly List<Sheet> sheets = [];
     private readonly Dictionary<int, string> sharedStrings = [];
@@ -244,5 +244,15 @@ public class Workbook
     /// </summary>
     /// <param name="name">The name of the sheet.</param>
     /// <returns>The sheet with the specified name, or <c>null</c> if not found.</returns>
-    public Sheet? Sheet(string name) => sheets.SingleOrDefault(s => s.Name == name);
+    public Sheet? Sheet(string name) => sheets.Find(s => string.Equals(s.Name, name, StringComparison.Ordinal));
+
+    /// <summary>
+    /// Releases all resources used by this workbook.
+    /// </summary>
+    public void Dispose()
+    {
+        // Currently no unmanaged resources to dispose.
+        // This method exists to support the IDisposable pattern for future extensibility.
+        GC.SuppressFinalize(this);
+    }
 }
