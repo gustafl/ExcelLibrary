@@ -14,8 +14,7 @@ public class NumberFormats
     [TestInitialize]
     public void Initialize()
     {
-        workbook = new();
-        workbook.Open(FILE);
+        workbook = Workbook.Open(FILE);
         sheet = workbook.Sheet("Sheet1");
         column = sheet.Column(2);
     }

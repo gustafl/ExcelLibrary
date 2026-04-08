@@ -3,9 +3,8 @@
 A lightweight, dependency-free .NET library for reading Excel workbooks (.xlsx).
 
 ```csharp
-var workbook = new Workbook();
-workbook.Open("data.xlsx");
-
+// One-liner with static factory
+using var workbook = Workbook.Open("data.xlsx");
 var value = workbook.Sheet("Sheet1")?.Cell("B2")?.Value;
 ```
 
@@ -26,8 +25,7 @@ Install-Package ExcelLibrary
 ### Reading cells
 
 ```csharp
-var workbook = new Workbook();
-workbook.Open("Book1.xlsx");
+using var workbook = Workbook.Open("Book1.xlsx");
 
 // Access by sheet name and cell address
 var sheet = workbook.Sheet("Sheet1");
@@ -41,8 +39,7 @@ var value = sheet?.Cell(2, 3)?.Value;
 ### Iterating rows and cells
 
 ```csharp
-var workbook = new Workbook();
-workbook.Open("report.xlsx");
+using var workbook = Workbook.Open("report.xlsx");
 
 foreach (var sheet in workbook.Sheets)
 {
@@ -64,8 +61,7 @@ foreach (var sheet in workbook.Sheets)
 By default, hidden sheets, rows, and columns are excluded. Use `WorkbookOptions` to include them:
 
 ```csharp
-var workbook = new Workbook();
-workbook.Open("data.xlsx", new WorkbookOptions { IncludeHidden = true });
+using var workbook = Workbook.Open("data.xlsx", new WorkbookOptions { IncludeHidden = true });
 
 // Now hidden sheets, rows, and columns are accessible
 var hiddenSheet = workbook.Sheet("HiddenSheet");
@@ -76,8 +72,7 @@ var hiddenSheet = workbook.Sheet("HiddenSheet");
 For large workbooks, you can defer loading sheet data until needed:
 
 ```csharp
-var workbook = new Workbook();
-workbook.Open("large-file.xlsx", new WorkbookOptions { LoadSheets = false });
+using var workbook = Workbook.Open("large-file.xlsx", new WorkbookOptions { LoadSheets = false });
 
 // Sheet metadata is available, but rows/cells are not yet loaded
 var sheet = workbook.Sheet("Sheet1");
@@ -117,7 +112,7 @@ This library focuses on **reading** Excel files. The following are out of scope:
 
 ## Requirements
 
-- .NET 10.0 or later
+- .NET 8.0 or later
 
 ## License
 

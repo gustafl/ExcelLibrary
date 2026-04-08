@@ -12,8 +12,7 @@ public class LoadSheetsIsFalse
     public void Initialize()
     {
         options = new WorkbookOptions { IncludeHidden = true, LoadSheets = false };
-        workbook = new();
-        workbook.Open(FILE, options);
+        workbook = Workbook.Open(FILE, options);
     }
 
     [TestMethod]

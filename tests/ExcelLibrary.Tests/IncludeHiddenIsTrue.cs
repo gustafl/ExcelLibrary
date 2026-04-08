@@ -17,8 +17,7 @@ public class IncludeHiddenIsTrue
     public void Initialize()
     {
         options = new WorkbookOptions { IncludeHidden = true, LoadSheets = true };
-        workbook = new();
-        workbook.Open(FILE, options);
+        workbook = Workbook.Open(FILE, options);
     }
 
     [TestMethod]

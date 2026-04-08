@@ -1,14 +1,13 @@
-﻿namespace ExcelLibrary;
+namespace ExcelLibrary;
 
 /// <summary>
 /// Represents an Excel workbook (.xlsx file) and provides access to its sheets, cells, and metadata.
 /// </summary>
 /// <example>
 /// <code>
-/// using var workbook = new Workbook();
-/// workbook.Open("data.xlsx");
-/// var sheet = workbook.Sheet("Sheet1");
-/// var value = sheet?.Cell("A1")?.Value;
+/// // Simple one-liner
+/// using var workbook = Workbook.Open("data.xlsx");
+/// var value = workbook.Sheet("Sheet1")?.Cell("A1")?.Value;
 /// </code>
 /// </example>
 public class Workbook : IDisposable
@@ -63,28 +62,32 @@ public class Workbook : IDisposable
     public int BaseYear { get; private set; } = 1900;
 
     /// <summary>
-    /// Opens an Excel workbook from the specified file path using default options.
+    /// Opens a workbook from the specified file path.
     /// </summary>
     /// <param name="file">The path to the .xlsx file.</param>
-    public void Open(string file)
-    {
-        File = file;
-        Open();
-    }
+    /// <returns>A new <see cref="Workbook"/> instance with data loaded.</returns>
+    /// <example>
+    /// <code>
+    /// using var workbook = Workbook.Open("data.xlsx");
+    /// var value = workbook.Sheet("Sheet1")?.Cell("A1")?.Value;
+    /// </code>
+    /// </example>
+    public static Workbook Open(string file) => Open(file, new WorkbookOptions());
 
     /// <summary>
-    /// Opens an Excel workbook from the specified file path with custom options.
+    /// Opens a workbook from the specified file path with custom options.
     /// </summary>
     /// <param name="file">The path to the .xlsx file.</param>
     /// <param name="options">The options controlling how the workbook is loaded.</param>
-    public void Open(string file, WorkbookOptions options)
+    /// <returns>A new <see cref="Workbook"/> instance with data loaded.</returns>
+    public static Workbook Open(string file, WorkbookOptions options)
     {
-        File = file;
-        Options = options;
-        Open();
+        var workbook = new Workbook { File = file, Options = options };
+        workbook.Load();
+        return workbook;
     }
 
-    private void Open()
+    private void Load()
     {
         if (File is null) return;
         using var archive = ZipFile.OpenRead(File);

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>ExcelLibrary.Tests</RootNamespace>
     <AssemblyName>ExcelLibrary.Tests</AssemblyName>
     <IsPackable>false</IsPackable>

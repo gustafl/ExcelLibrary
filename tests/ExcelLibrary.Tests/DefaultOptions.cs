@@ -16,8 +16,7 @@ public class DefaultOptions
     [TestInitialize]
     public void Initialize()
     {
-        workbook = new();
-        workbook.Open(FILE);
+        workbook = Workbook.Open(FILE);
     }
 
     [TestMethod]
@@ -624,8 +623,7 @@ public class DefaultOptions
     {
         // Arrange
         var options = new WorkbookOptions { IncludeHidden = true };
-        var wb = new Workbook();
-        wb.Open(FILE, options);
+        var wb = Workbook.Open(FILE, options);
         var sheet = wb.Sheet("Sheet1");
         var row = sheet.Row(2);
 
@@ -640,8 +638,7 @@ public class DefaultOptions
     {
         // Arrange
         var options = new WorkbookOptions { IncludeHidden = true };
-        var wb = new Workbook();
-        wb.Open(FILE, options);
+        var wb = Workbook.Open(FILE, options);
         var sheet = wb.Sheet("Sheet1");
         var row = sheet.Row(8);
 
@@ -656,8 +653,7 @@ public class DefaultOptions
     {
         // Arrange
         var options = new WorkbookOptions { IncludeHidden = true };
-        var wb = new Workbook();
-        wb.Open(FILE, options);
+        var wb = Workbook.Open(FILE, options);
         var sheet = wb.Sheet("Sheet1");
         var column = sheet.Column(2);
 
@@ -672,8 +668,7 @@ public class DefaultOptions
     {
         // Arrange
         var options = new WorkbookOptions { IncludeHidden = true };
-        var wb = new Workbook();
-        wb.Open(FILE, options);
+        var wb = Workbook.Open(FILE, options);
         var sheet = wb.Sheet("Sheet1");
         var column = sheet.Column(5);
 
