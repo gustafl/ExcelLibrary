@@ -135,8 +135,10 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
 
         foreach (var eRow in sheetData.Elements(ns + "row"))
         {
-            // Skip empty rows
-            if (!eRow.Descendants(ns + "v").Any())
+            // Skip empty rows (no <v> values and no inline strings)
+            bool hasValues = eRow.Descendants(ns + "v").Any();
+            bool hasInlineStrings = eRow.Elements(ns + "c").Any(c => c.Attribute("t") is { Value: "inlineStr" });
+            if (!hasValues && !hasInlineStrings)
                 continue;
 
             // Set row properties
@@ -147,9 +149,10 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
             // Loop through cells on row
             foreach (var eCell in eRow.Elements(ns + "c"))
             {
-                // Skip empty cells
+                // Skip empty cells (no <v> value and no inline string)
                 var xValue = eCell.Element(ns + "v");
-                if (xValue is null)
+                bool hasInlineString = IsInlineString(eCell);
+                if (xValue is null && !hasInlineString)
                     continue;
 
                 // Get cell position
@@ -165,12 +168,16 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
                     format = (NumberFormat)Workbook.NumberFormats[styleIndex];
                 }
 
-                // Get shared string (if any)
-                string? sharedString = null;
+                // Resolve string value: shared string, inline string, or direct value
+                string? resolvedString = null;
                 if (IsSharedString(eCell))
                 {
-                    int number = int.Parse(xValue.Value);
-                    Workbook.SharedStrings.TryGetValue(number, out sharedString);
+                    int number = int.Parse(xValue!.Value);
+                    Workbook.SharedStrings.TryGetValue(number, out resolvedString);
+                }
+                else if (hasInlineString)
+                {
+                    resolvedString = GetInlineStringValue(eCell);
                 }
 
                 // Make column
@@ -178,7 +185,7 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
                 var column = GetOrCreateColumn(columnIndex, isHiddenColumn);
 
                 // Compute cell value (with format conversion)
-                string rawValue = sharedString ?? xValue.Value;
+                string rawValue = resolvedString ?? xValue?.Value ?? string.Empty;
                 string cellValue = format switch
                 {
                     NumberFormat.Date => Utilities.ConvertDate(rawValue, Workbook.BaseYear),
@@ -201,6 +208,15 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
     }
 
     private bool IsSharedString(XElement cell) => cell.Attribute("t") is { Value: "s" };
+
+    private bool IsInlineString(XElement cell) => cell.Attribute("t") is { Value: "inlineStr" };
+
+    private static string? GetInlineStringValue(XElement cell)
+    {
+        // Inline string structure: <c t="inlineStr"><is><t>value</t></is></c>
+        var ns = cell.Name.Namespace;
+        return cell.Element(ns + "is")?.Element(ns + "t")?.Value;
+    }
 
     private Column GetOrCreateColumn(int columnIndex, bool hidden)
     {
