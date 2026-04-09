@@ -8,18 +8,6 @@ using var workbook = Workbook.Open("data.xlsx");
 var value = workbook.Sheet("Sheet1")?.Cell("B2")?.Value;
 ```
 
-## Installation
-
-```shell
-dotnet add package ExcelLibrary
-```
-
-Or via the NuGet Package Manager:
-
-```shell
-Install-Package ExcelLibrary
-```
-
 ## Quick Start
 
 ### Reading cells
@@ -117,3 +105,10 @@ This library focuses on **reading** Excel files. The following are out of scope:
 ## License
 
 MIT
+
+## NuGet notice
+
+An older version of this library has been published on NuGet without my authorization. I am
+currently working on publishing this new much improved version as an official NuGet package.
+Any NuGet package not explicitly linked or mentioned in this repository should be considered
+unofficial. Further updates regarding an official package will be announced here.

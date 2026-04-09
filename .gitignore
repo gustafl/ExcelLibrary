@@ -1,5 +1,7 @@
 .vs/
+.github/
 bin/
 obj/
-TestResults\
+TestResults/
+
 *.Backup.tmp
