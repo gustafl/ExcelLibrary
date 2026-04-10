@@ -83,14 +83,30 @@ foreach (var sheet in workbook.Sheets)
 }
 ```
 
+### Loading from streams
+
+Load workbooks directly from any stream (useful for web uploads, embedded resources, etc.):
+
+```csharp
+// From a file stream
+using var stream = File.OpenRead("data.xlsx");
+using var workbook = Workbook.Open(stream);
+
+// From a memory stream (e.g., downloaded content)
+var bytes = await httpClient.GetByteArrayAsync(url);
+using var memoryStream = new MemoryStream(bytes);
+using var workbook = Workbook.Open(memoryStream);
+```
+
 ## Features
 
 - **Zero dependencies** — Uses only built-in .NET APIs
+- **Stream support** — Load from files, memory streams, or any readable stream
 - **LINQ-friendly** — Collections like `Sheets`, `Rows`, and `Cells` are `IEnumerable<T>`
 - **Visibility-aware** — Respects hidden sheets, rows, and columns by default
 - **Lazy loading** — Optionally defer sheet loading for better performance
 - **Parallel loading** — Load multiple sheets concurrently for large workbooks
-- **Well-tested** — Comprehensive test suite with 80+ unit tests
+- **Well-tested** — Comprehensive test suite with 99 unit tests
 
 ## API Reference
 

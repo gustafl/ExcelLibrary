@@ -39,6 +39,11 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
     public required Workbook Workbook { get; init; }
 
     /// <summary>
+    /// Gets whether this sheet's data has been loaded.
+    /// </summary>
+    internal bool IsLoaded { get; private set; }
+
+    /// <summary>
     /// Gets a row by its 1-based index.
     /// </summary>
     /// <param name="index">The 1-based row index.</param>
@@ -116,11 +121,12 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
     /// </summary>
     public void Open()
     {
-        using var archive = ZipFile.OpenRead(Workbook.File!);
-        var entry = archive.Entries.FirstOrDefault(e => e.FullName.Equals(Path, StringComparison.OrdinalIgnoreCase));
-        if (entry is null) return;
+        if (IsLoaded) return;
 
-        var document = XDocument.Load(entry.Open());
+        using var stream = Workbook.OpenArchiveEntry(Path);
+        if (stream is null) return;
+
+        var document = XDocument.Load(stream);
         var root = document.Root;
         if (root is null) return;
 
@@ -131,7 +137,12 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
 
         // Loop through rows
         var sheetData = root.Element(ns + "sheetData");
-        if (sheetData is null) return;
+        if (sheetData is null)
+        {
+            IsLoaded = true;
+            Workbook.NotifySheetLoaded();
+            return;
+        }
 
         foreach (var eRow in sheetData.Elements(ns + "row"))
         {
@@ -205,6 +216,9 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
                 AddColumn(column);
             }
         }
+
+        IsLoaded = true;
+        Workbook.NotifySheetLoaded();
     }
 
     private bool IsSharedString(XElement cell) => cell.Attribute("t") is { Value: "s" };
@@ -269,3 +283,6 @@ public partial class Sheet(string name, string? id = null, bool hidden = false)
 
     internal void AddColumn(Column column) => columnsByIndex.TryAdd(column.Index, column);
 }
+
+
+

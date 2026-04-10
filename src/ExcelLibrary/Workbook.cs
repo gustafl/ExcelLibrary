@@ -36,6 +36,10 @@ public class Workbook : IDisposable
     private readonly Dictionary<int, string> sharedStrings = [];
     private readonly Dictionary<int, NumberFormat> numberFormats = [];
 
+    private ZipArchive? archive;
+    private Stream? ownedStream;
+    private bool disposed;
+
     /// <summary>
     /// Gets the file path of the currently opened workbook.
     /// </summary>
@@ -82,15 +86,50 @@ public class Workbook : IDisposable
     /// <returns>A new <see cref="Workbook"/> instance with data loaded.</returns>
     public static Workbook Open(string file, WorkbookOptions options)
     {
-        var workbook = new Workbook { File = file, Options = options };
-        workbook.Load();
+        var stream = System.IO.File.OpenRead(file);
+        var workbook = new Workbook { File = file, Options = options, ownedStream = stream };
+        workbook.Load(stream);
         return workbook;
     }
 
-    private void Load()
+    /// <summary>
+    /// Opens a workbook from the specified stream.
+    /// </summary>
+    /// <param name="stream">A readable stream containing the .xlsx file data.</param>
+    /// <returns>A new <see cref="Workbook"/> instance with data loaded.</returns>
+    /// <remarks>
+    /// The stream must remain open for the lifetime of the workbook if <see cref="WorkbookOptions.LoadSheets"/> is <c>false</c>.
+    /// The workbook does not take ownership of the stream; the caller is responsible for disposing it.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// using var stream = File.OpenRead("data.xlsx");
+    /// using var workbook = Workbook.Open(stream);
+    /// var value = workbook.Sheet("Sheet1")?.Cell("A1")?.Value;
+    /// </code>
+    /// </example>
+    public static Workbook Open(Stream stream) => Open(stream, new WorkbookOptions());
+
+    /// <summary>
+    /// Opens a workbook from the specified stream with custom options.
+    /// </summary>
+    /// <param name="stream">A readable stream containing the .xlsx file data.</param>
+    /// <param name="options">The options controlling how the workbook is loaded.</param>
+    /// <returns>A new <see cref="Workbook"/> instance with data loaded.</returns>
+    /// <remarks>
+    /// The stream must remain open for the lifetime of the workbook if <see cref="WorkbookOptions.LoadSheets"/> is <c>false</c>.
+    /// The workbook does not take ownership of the stream; the caller is responsible for disposing it.
+    /// </remarks>
+    public static Workbook Open(Stream stream, WorkbookOptions options)
     {
-        if (File is null) return;
-        using var archive = ZipFile.OpenRead(File);
+        var workbook = new Workbook { Options = options };
+        workbook.Load(stream);
+        return workbook;
+    }
+
+    private void Load(Stream stream)
+    {
+        archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
 
         // Collect sheet metadata from both XML files before creating Sheet objects
         var sheetMetadata = new Dictionary<string, SheetMetadata>();
@@ -134,7 +173,67 @@ public class Workbook : IDisposable
             else
                 foreach (var sheet in sheets)
                     sheet.Open();
+
+            // If all sheets are loaded, we can close the archive
+            CloseArchive();
         }
+    }
+
+    private readonly object archiveLock = new();
+
+    /// <summary>
+    /// Gets an entry from the archive by path. Used internally by Sheet.Open().
+    /// </summary>
+    internal ZipArchiveEntry? GetArchiveEntry(string path)
+    {
+        lock (archiveLock)
+        {
+            return archive?.Entries.FirstOrDefault(e => e.FullName.Equals(path, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    /// <summary>
+    /// Opens an entry stream from the archive. Thread-safe for parallel loading.
+    /// </summary>
+    internal Stream? OpenArchiveEntry(string path)
+    {
+        lock (archiveLock)
+        {
+            var entry = archive?.Entries.FirstOrDefault(e => e.FullName.Equals(path, StringComparison.OrdinalIgnoreCase));
+            if (entry is null) return null;
+
+            // Copy to memory stream for thread-safe access
+            var memoryStream = new MemoryStream();
+            using (var entryStream = entry.Open())
+            {
+                entryStream.CopyTo(memoryStream);
+            }
+            memoryStream.Position = 0;
+            return memoryStream;
+        }
+    }
+
+    /// <summary>
+    /// Notifies the workbook that a sheet has been loaded. Closes the archive when all sheets are loaded.
+    /// </summary>
+    internal void NotifySheetLoaded()
+    {
+        lock (archiveLock)
+        {
+            // Check if all sheets are now loaded
+            if (sheets.All(s => s.IsLoaded))
+            {
+                CloseArchive();
+            }
+        }
+    }
+
+    private void CloseArchive()
+    {
+        archive?.Dispose();
+        archive = null;
+        ownedStream?.Dispose();
+        ownedStream = null;
     }
 
     /// <summary>
@@ -254,8 +353,10 @@ public class Workbook : IDisposable
     /// </summary>
     public void Dispose()
     {
-        // Currently no unmanaged resources to dispose.
-        // This method exists to support the IDisposable pattern for future extensibility.
+        if (disposed) return;
+        disposed = true;
+
+        CloseArchive();
         GC.SuppressFinalize(this);
     }
 }
