@@ -69,14 +69,28 @@ var sheet = workbook.Sheet("Sheet1");
 sheet?.Open();
 ```
 
+### Parallel sheet loading
+
+For workbooks with many sheets, enable parallel loading for better performance:
+
+```csharp
+using var workbook = Workbook.Open("many-sheets.xlsx", new WorkbookOptions { ParallelLoadSheets = true });
+
+// All sheets are loaded concurrently
+foreach (var sheet in workbook.Sheets)
+{
+    Console.WriteLine($"{sheet.Name}: {sheet.Rows.Count()} rows");
+}
+```
+
 ## Features
 
 - **Zero dependencies** — Uses only built-in .NET APIs
 - **LINQ-friendly** — Collections like `Sheets`, `Rows`, and `Cells` are `IEnumerable<T>`
 - **Visibility-aware** — Respects hidden sheets, rows, and columns by default
 - **Lazy loading** — Optionally defer sheet loading for better performance
-- **Well-tested** — Comprehensive test suite with 70+ unit tests
-- **Fully documented** — XML documentation for IntelliSense support
+- **Parallel loading** — Load multiple sheets concurrently for large workbooks
+- **Well-tested** — Comprehensive test suite with 80+ unit tests
 
 ## API Reference
 
