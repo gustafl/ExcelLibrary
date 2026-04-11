@@ -27,7 +27,7 @@ static class Utilities
         var baseDate = new DateOnly(baseYear, 1, 1);
         int daysToAdd = (int)(double.Parse(excelDate) - ExcelEpochOffset);
         var convertedDate = baseDate.AddDays(daysToAdd);
-        return convertedDate.ToShortDateString();
+        return convertedDate.ToString("yyyy-MM-dd");
     }
 
     /// <summary>

@@ -143,6 +143,31 @@ using var memoryStream = new MemoryStream(bytes);
 using var workbook = Workbook.Open(memoryStream);
 ```
 
+### Cell formats and dates
+
+Dates and times are automatically converted from Excel's internal numeric format to ISO format strings:
+
+```csharp
+var cell = sheet?.Cell("A1");
+Console.WriteLine(cell?.Value);  // Output: 2025-12-31
+```
+
+The `Cell.Format` property indicates the number format category, which is useful for custom parsing of other formats:
+
+```csharp
+var cell = sheet?.Cell("B2");
+
+var value = cell?.Format switch
+{
+    NumberFormat.Percentage => double.Parse(cell.Value.TrimEnd('%')) / 100,
+    NumberFormat.Currency => decimal.Parse(cell.Value, NumberStyles.Currency),
+    NumberFormat.Number => double.Parse(cell.Value),
+    _ => null as double?
+};
+```
+
+Format categories include `General`, `Number`, `Currency`, `Accounting`, `Date`, `Time`, `Percentage`, `Fraction`, `Scientific`, `Text`, `Special`, `Custom`, and `Unsupported`.
+
 ## Features
 
 - **Zero dependencies** — Uses only built-in .NET APIs
