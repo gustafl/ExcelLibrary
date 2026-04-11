@@ -3,7 +3,6 @@
 A lightweight, dependency-free .NET library for reading Excel workbooks (.xlsx).
 
 ```csharp
-// One-liner with static factory
 using var workbook = Workbook.Open("data.xlsx");
 var value = workbook.Sheet("Sheet1")?.Cell("B2")?.Value;
 ```
@@ -14,14 +13,26 @@ var value = workbook.Sheet("Sheet1")?.Cell("B2")?.Value;
 
 ```csharp
 using var workbook = Workbook.Open("Book1.xlsx");
-
-// Access by sheet name and cell address
 var sheet = workbook.Sheet("Sheet1");
+
+// Access by cell address
 var cell = sheet?.Cell("A1");
 Console.WriteLine(cell?.Value);
 
 // Or by row and column index (1-based)
 var value = sheet?.Cell(2, 3)?.Value;
+
+// Get a specific row or column
+var row = sheet?.Row(5);
+var column = sheet?.Column(2);
+
+// Access cells from a row or column
+var cellsInRow = row?.Cells;
+var cellsInColumn = column?.Cells;
+
+// Navigate up the hierarchy
+var parentSheet = row?.Sheet;
+var parentWorkbook = cell?.Row.Sheet.Workbook;
 ```
 
 ### Iterating rows and cells
@@ -41,6 +52,40 @@ foreach (var sheet in workbook.Sheets)
         }
         Console.WriteLine();
     }
+}
+```
+
+All collections (`Sheets`, `Rows`, `Columns`, `Cells`) are `IEnumerable<T>`, so you can use LINQ:
+
+```csharp
+// Find non-empty cells
+var nonEmpty = sheet.Rows
+    .SelectMany(r => r.Cells)
+    .Where(c => !string.IsNullOrEmpty(c.Value));
+
+// Get unique values from a column
+var uniqueValues = sheet.Column(1)?.Cells
+    .Select(c => c.Value)
+    .Distinct();
+```
+
+### Exception handling
+
+Handle common exceptions when opening workbooks:
+
+```csharp
+try
+{
+    using var workbook = Workbook.Open("data.xlsx");
+    // Work with the workbook
+}
+catch (FileNotFoundException ex)
+{
+    Console.WriteLine($"File not found: {ex.FileName}");
+}
+catch (IOException ex)
+{
+    Console.WriteLine($"Error reading file: {ex.Message}");
 }
 ```
 
