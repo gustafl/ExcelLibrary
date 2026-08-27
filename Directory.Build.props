@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<Product>ExcelLibrary</Product>
-		<Copyright>Copyright © 2015-2026 Gustaf Liljegren</Copyright>
+		<Copyright>Copyright (c) Gustaf Liljegren 2015-2026</Copyright>
 		<Version>2.0.0</Version>
 	</PropertyGroup>
 
