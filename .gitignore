@@ -3,5 +3,6 @@
 bin/
 obj/
 TestResults/
+artifacts/
 
 *.Backup.tmp

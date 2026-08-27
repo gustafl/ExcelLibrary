@@ -1,15 +1,27 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>ExcelLibrary</RootNamespace>
-    <AssemblyName>ExcelLibrary</AssemblyName>
-    <ImplicitUsings>disable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<RootNamespace>ExcelLibrary</RootNamespace>
+		<AssemblyName>ExcelLibrary</AssemblyName>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <InternalsVisibleTo Include="ExcelLibrary.Tests" />
-  </ItemGroup>
+	<PropertyGroup>
+		<PackageId>GustafL.ExcelLibrary</PackageId>
+		<Title>ExcelLibrary</Title>
+		<Authors>Gustaf Liljegren</Authors>
+		<Description>A lightweight, dependency-free .NET library for reading Excel workbooks (.xlsx).</Description>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/gustafl/ExcelLibrary</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/gustafl/ExcelLibrary</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>excel;xlsx;spreadsheet;workbook;reader</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="ExcelLibrary.Tests" />
+	</ItemGroup>
 
 </Project>
