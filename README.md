@@ -7,6 +7,18 @@ using var workbook = Workbook.Open("data.xlsx");
 var value = workbook.Sheet("Sheet1")?.Cell("B2")?.Value;
 ```
 
+## Installation
+
+ExcelLibrary is available on NuGet as **GustafL.ExcelLibrary**.
+
+Using the .NET CLI:
+
+```powershell
+dotnet add package GustafL.ExcelLibrary
+```
+
+Or search for `GustafL.ExcelLibrary` in the NuGet Package Manager in Visual Studio.
+
 ## Quick Start
 
 ### Reading cells
@@ -208,7 +220,5 @@ MIT
 
 ## NuGet notice
 
-An older version of this library has been published on NuGet without my authorization. I am
-currently working on publishing this new much improved version as an official NuGet package.
-Any NuGet package not explicitly linked or mentioned in this repository should be considered
-unofficial. Further updates regarding an official package will be announced here.
+There used to be an older, unofficial version of this library on NuGet. It was published by
+a third party under my name, without my authorization. That package has since been removed.
